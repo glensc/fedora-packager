@@ -26,322 +26,65 @@ import getopt
 import subprocess
 import shutil
 import hashlib
+import datetime
 
-class Vcs(object):
-    def __init__(self, parsedurl):
-        self._parsed_url = parsedurl
-        # Deliberately drop params/query
-        self._nonfragment_url_string = urlparse.urlunparse((parsedurl.scheme,
-                                                            parsedurl.netloc,
-                                                            parsedurl.path,
-                                                            '', '', ''))
-        self._branch = self._parsed_url.fragment
-        
-    def get_url(self):
-        return self._parsed_url
-        
-    def checkout(self, destdir):
-        """Retrieve a new copy of the source tree, saving as destdir"""
-        pass
-        
-    def update(self, directory):
-        """Update directory from the latest upstream"""
-        pass
-        
-    def get_scheme(self):
-        return self._parsed_url.scheme
-        
-    def get_id(self, directory):
-        pass
-        
-    def _vcs_exec(self, *args, **kwargs):
-        print "Running: %r" % (args[0], )
-        if not 'stdout' in kwargs:
-            kwargs['stdout'] = sys.stdout
-        if not 'stderr' in kwargs:
-            kwargs['stderr'] = sys.stderr
-        subprocess.check_call(*args, **kwargs)
-        
-    @classmethod
-    def new_from_spec(cls, spec):
-        """See http://maven.apache.org/scm/scm-url-format.html ; we use this format,
-        but without the "scm:" prefix."""
-        # Hack for backwards compatibility
-        if spec.startswith('git://'):
-            (vcstype, url) = ('git', spec)
-        else:
-            (vcstype, url) = spec.split(':', 1)
-        orig = urlparse.urlsplit(url)
-        # We want to support fragments, even if the URL type isn't recognized.  So change the
-        # scheme to http temporarily.
-        temp = urlparse.urlunsplit(('http', orig.netloc, orig.path, orig.query, orig.fragment))
-        new = urlparse.urlsplit(temp)
-        combined = urlparse.SplitResult(orig.scheme, new.netloc, new.path, new.query, new.fragment)
-        if vcstype == 'git':
-            return GitVcs(combined)
-        
-class GitVcs(Vcs):
-    def checkout(self, destdir):
-        self._vcs_exec(['git', 'clone', '--depth=1', self._nonfragment_url_string, destdir])
-        if self._branch:
-            self._vcs_exec(['git', 'checkout', self._branch], cwd=destdir)
-        
-    def update(self, directory):
-        if self._branch:
-            self._vcs_exec(['git', 'checkout', self._branch], cwd=directory)
-        self._vcs_exec(['git', 'pull', '-r'], cwd=directory)
-        
-    def get_commit_as_patch(self, directory, commitid, destfile):
-        f = open(destfile, 'w')
-        self._vcs_exec(['git', 'format-patch', '--stdout', commitid + '^..' + commitid],
-                        cwd=directory, stdout=f, stderr=sys.stderr)
-        f.close()   
-        
-    def get_id(self, directory):
-        output = subprocess.Popen(['git', 'show', '--format=%H'], stdout=subprocess.PIPE, cwd=directory).communicate()[0]
-        return output.split('\n')[0]
-        
-    def get_commit_summary_as_filename(self, directory, commitid):
-        output = subprocess.Popen(['git', 'show', '--format=%f', commitid], stdout=subprocess.PIPE, cwd=directory).communicate()[0]
-        return output.split('\n')[0]
-        
-class BuildSystem(object):
-    def __init__(self, directory):
-        self._directory = directory
-        
-    @classmethod
-    def new_from_directory(cls, directory):
-        autogen_path = os.path.join(directory, 'autogen.sh')
-        if os.path.exists(autogen_path):
-            return AutogenAutotools(directory)
-        if os.path.exists(os.path.join(directory, 'Makefile.am')):
-            return Autotools(directory)
-            
-    def get_bootstrap_buildrequires(self):
-        return []
-        
-    def get_substitutions(self):
-        return []
-        
-class Autotools(BuildSystem):
-    def get_bootstrap_buildrequires(self):
-        return ['libtool', 'automake', 'autoconf']
-        
-    def get_substitutions(self):
-        return [(re.compile('^%configure'), 'autoreconf -f -i\n%configure')]
-        
-class AutogenAutotools(Autotools):
-    def get_bootstrap_buildrequires(self):
-        bootstrap = super(AutogenAutotools, self).get_bootstrap_buildrequires()
-        bootstrap.append('gnome-common')
-        bootstrap.append('intltool')
-        return bootstrap
-        
-    def get_substitutions(self):
-        # We'll configure twice with this, but oh well.  Need this in RPM.
-        return [(re.compile('^%configure'), './autogen.sh && %configure')]
-        
-class Spec(object):
-    def __init__(self, filename):
-        self._filename = filename
-        f = open(filename)
-        self._lines = f.readlines()
-        f.close()
-        self._saved = False
-        
-        self._append_buildrequires = []
-        self._new_release = None
-        self._source_dirname = None
-        self._source_archivename = None
-        self._substitutions = []
-        self._added_patches = []
-
-    def get_name(self):
-        return self._filename[:-5]
-        
-    def add_buildrequires(self, new_buildrequires):
-        assert not self._saved
-        current_buildrequires = self.get_key_allvalues('BuildRequires')
-        new_buildrequires = filter(lambda x: x not in current_buildrequires, new_buildrequires)
-        self._append_buildrequires = new_buildrequires
-        
-    def increment_release_snapshot(self, identifier):
-        assert not self._saved
-        cur_release = self.get_key('Release')
-        release_has_dist = cur_release.endswith('%{?dist}')
-        if release_has_dist:
-            cur_release = cur_release[:-8]
-        snapshot_release_re = re.compile(r'^([0-9]+)\.([0-9]+)\.')
-        numeric_re = re.compile(r'^([0-9]+)$')
-        match = snapshot_release_re.match(cur_release)
-        if match:
-            firstint = int(match.group(1))
-            relint = int(match.group(2)) + 1
-            new_release = '%d.%d.%s' % (firstint, relint, identifier)
-        else:
-            match = numeric_re.match(cur_release)
-            if not match:
-                raise ValueError("Can't handle Release value: %r" % (cur_release, ))
-            new_release = '%s.0.%s' % (cur_release, identifier)
-        if release_has_dist:
-            new_release += '%{?dist}'
-            
-        self._new_release = new_release
-        
-    def set_source(self, dirname, archivename):
-        assert not self._saved
-        self._source_dirname = dirname
-        self._source_archivename = archivename
-        
-    def substitute(self, substitutions):
-        assert not self._saved
-        self._substitutions = substitutions
-        
-    def add_patch(self, filename):
-        patches = self.get_patches()
-        if len(patches) == 0:
-            patchnum = 0
-        else:
-            patchnums = map(lambda a: a[0], patches)
-            patchnum = max(patchnums)
-        self._added_patches.append(filename)
-        
-    def save(self):
-        self._saved = True
-        tmpname = self._filename + '.tmp'
-        self.save_as(tmpname)
-        os.rename(tmpname, self._filename)
-        
-    def save_as(self, new_filename):
-        wrote_buildrequires = False
-        output = open(new_filename, 'w')
-        
-        apply_patchmeta_at_line = -1
-        apply_patch_apply_at_line = -1
-        source_re = re.compile(r'^Source([0-9]*):')
-        patch_re = re.compile(r'^Patch([0-9]+):')
-        apply_re = re.compile(r'^%patch')
-        highest_patchnum = -1
-        for i,line in enumerate(self._lines):
-            match = patch_re.search(line)
-            if match:
-                apply_patchmeta_at_line = i
-                highest_patchnum = int(match.group(1))
-                continue
-            match = source_re.search(line)
-            if match:
-                apply_patchmeta_at_line = i
-                if highest_patchnum == -1:
-                    highest_patchnum = 0
-                continue
-            if line.startswith('%setup'):
-                apply_patch_apply_at_line = i + 1
-                continue
-            match = apply_re.search(line)
-            if match:
-                apply_patch_apply_at_line = i + 1
-                continue
-        if apply_patchmeta_at_line == -1:
-            print "Error: Couldn't determine where to add Patch:"
-            sys.exit(1)
-        if apply_patch_apply_at_line == -1:
-            print "Error: Couldn't determine where to add %patch"
-            sys.exit(1)
-        for i,line in enumerate(self._lines):
-            if i == apply_patchmeta_at_line:
-                for pnum,patch in enumerate(self._added_patches):
-                    output.write('Patch%d: %s\n' % (highest_patchnum + pnum + 1, patch))
-            elif i == apply_patch_apply_at_line:
-                for pnum,patch in enumerate(self._added_patches):
-                    output.write('%%patch%d -p1\n' % (highest_patchnum + pnum + 1, ))
-        
-            replacement_matched = False
-            for sub_re, replacement in self._substitutions:
-                (line, subcount) = sub_re.subn(replacement, line)
-                if subcount > 0:
-                    replacement_matched = True
-                    break                
-            if replacement_matched:
-                output.write(line)
-            elif line.startswith('Release:') and self._new_release:
-                output.write('Release: %s\n' % self._new_release)
-            elif line.startswith('Source0:') and self._source_archivename:
-                output.write('Source0: %s\n' % self._source_archivename)
-            elif line.startswith('%setup') and self._source_dirname:  # This is dumb, need to automate this in RPM
-                output.write('%%setup -q -n %s\n' % self._source_dirname)
-            elif line.startswith('BuildRequires:') and not wrote_buildrequires:
-                output.write(line)
-                for req in self._append_buildrequires:
-                    output.write('BuildRequires: %s\n' % req)
-                wrote_buildrequires = True
-            else:
-                output.write(line)
-                
-        output.close()
-        
-    def get_patches(self):
-        patchre = re.compile(r'^Patch([0-9]+):')
-        patches = []
-        for line in self._lines:
-            match = patchre.search(line)
-            if not match:
-                continue
-            patches.append((int(match.group(1)), line.split(':', 1)[1].strip()))
-        return patches
-
-    def get_version(self):
-        return self.get_key('Version')
-        
-    def get_vcs(self):
-        for line in self._lines:
-            if line.startswith('#VCS:'):
-                return line[5:].strip()
-        raise ValueError("No such key #VCS in file %r" % (self._filename, ))
-        
-    def get_key(self, key):
-        key = key + ':'
-        for line in self._lines:
-            if line.startswith(key):
-                return line[len(key):].strip()
-        raise ValueError("No such key %r in file %r" % (key, self._filename))
-        
-    def get_key_allvalues(self, key):
-        key = key + ':'
-        result = []
-        for line in self._lines:
-            if line.startswith(key):
-                result.append(line[len(key):].strip())
-        return result
-        
-def command_checkout(spec, vcs, vcsdir, args=[], opts={}):
+from pyfedpkg.lame_vcs_abstraction import Vcs
+from pyfedpkg.build_intelligence import BuildSystem
+from pyfedpkg.spec import Spec	
+   
+def _require_checkout(spec, vcs, vcsdir, verbose=False):
     if os.path.exists(vcsdir):
-        print "VCS directory %r already exists" % (vcsdir, )
+        if verbose:
+            print "VCS directory %r already exists" % (vcsdir, )
         return
     print "Checking out from %r into new directory %r" % (vcs.get_url(), vcsdir)
     vcs.checkout(vcsdir)
+
+def command_checkout(spec, vcs, vcsdir, args=[], opts={}):
+    _require_checkout(spec, vcs, vcsdir, verbose=True)
     
 def command_pull(spec, vcs, vcsdir, args=[], opts={}):
     if not os.path.exists(vcsdir):
         command_checkout(spec, vcs, vcsdir, args=args, opts=opts)
     print "Updating from %r existing directory %r" % (vcs.get_url(), vcsdir)
+    vcs.switch_to_revision(vcsdir, None)
     oldid = vcs.get_id(vcsdir)
     vcs.update(vcsdir)
     newid = vcs.get_id(vcsdir)
     if oldid == newid and not opts['force']:
         print "No changes upstream"
         if opts['statusfile'] is not None:
-            f = open(opt_statusfile, 'w')
+            f = open(opts['statusfile'], 'w')
             f.write('unchanged')
             f.close()
         sys.exit(0)
-        
-def command_pull_update(spec, vcs, vcsdir, args=[], opts={}):
-    command_pull(spec, vcs, vcsdir, args=args, opts=opts)
-    
-    name = spec.get_name()
-    newid = vcs.get_id(vcsdir)
 
-    snapshot_dirname = '%s-%s%s%s' % (name, version, vcs.get_scheme(), newid)
+def command_pull_retarget(spec, vcs, vcsdir, args=[], opts={}):
+    command_pull(spec, vcs, vcsdir, args=args, opts=opts)
+    command_retarget(spec, vcs, vcsdir, args=['HEAD'], opts=opts)
+        
+def command_retarget(spec, vcs, vcsdir, args=[], opts={}):
+    _require_checkout(spec, vcs, vcsdir)
+    
+    if len(args) != 1:
+        print "Usage: fedpkg-vcs retarget REVISION"
+        sys.exit(1)
+        
+    target = args[0]
+    
+    vcs.switch_to_revision(vcsdir, target)
+    
+    try:
+        _impl_retarget(spec, vcs, vcsdir, args=[target], opts=opts)
+    finally:
+        vcs.switch_to_revision(vcsdir, None)
+
+def _impl_retarget(spec, vcs, vcsdir, args=[], opts={}):
+    name = spec.get_name()
+    version = spec.get_version()
+    abbrev_id = vcs.get_abbreviated_id(vcsdir)
+
+    snapshot_dirname = '%s-%s%s%s' % (name, version, vcs.get_scheme(), abbrev_id)
     snapshot_archivename = snapshot_dirname + '.tar.bz2'
     subprocess.check_call(['tar', '-cj', r'--transform=s,^\.,' + snapshot_dirname + ',', '-f', '../' + snapshot_archivename, '.'], cwd=vcsdir)
     
@@ -353,7 +96,9 @@ def command_pull_update(spec, vcs, vcsdir, args=[], opts={}):
         spec.substitute(buildsys.get_substitutions())
 
     spec.set_source(snapshot_dirname, snapshot_archivename)
-    spec.increment_release_snapshot(newid)
+    now = datetime.datetime.now()
+    alphatag = "%s%s%s" % (now.strftime("%Y%m%d"), vcs.vcstype, abbrev_id)
+    spec.increment_release_snapshot(alphatag)
     spec.save()
     
     snapshot_md5 = hashlib.md5()
@@ -368,17 +113,17 @@ def command_pull_update(spec, vcs, vcsdir, args=[], opts={}):
     
     f = open('sources', 'w')
     f.write(snapshot_md5)
-    f.write(' ')
+    f.write('  ')
     f.write(snapshot_archivename)
     f.write('\n')
     f.close()
             
-    print "Updated %s and sources file" % (targetspec, )
+    print "Updated %s and sources file" % (spec, )
     print "If you want to upload to Fedora, you'll need to run:"
     print "  make upload FILE=%s" % (snapshot_archivename, )
     print "  cvs commit && make tag build"
-    if opt_statusfile is not None:
-        f = open(opt_statusfile, 'w')
+    if opts['statusfile'] is not None:
+        f = open(opts['statusfile'], 'w')
         f.write('updated')
         f.close()
         
@@ -404,13 +149,14 @@ def command_cherrypick(spec, vcs, vcsdir, args=[], opts={}):
 def main():
     valid_commands = { 'checkout': (command_checkout, "Perform an initial checkout of upstream revision control"),
                        'pull': (command_pull, "Pull the latest upstream code"),
-                       'pull-update': (command_pull_update, "Pull the latest upstream, modify spec file to use it"),
+                       'retarget': (command_retarget, "Modify spec to use given commit id"),
+                       'pull-retarget': (command_pull_retarget, "Pull the latest upstream, modify spec file to use it"),
                        'cherrypick': (command_cherrypick, "Apply a specific commit id as a patch to specfile") }
     def usage(ecode):
         print ""
         print "Usage: fedpkg-vcs COMMAND [-f]"
         print "Valid commands:"
-        for cmdname in valid_commands:
+        for cmdname in sorted(valid_commands):
             (cmdfunc, description) = valid_commands[cmdname]
             print "  %s: %s" % (cmdname, description)
         sys.exit(ecode)
@@ -422,8 +168,10 @@ def main():
         
     if len(args) < 1:
         usage(1)
-        
+
     cmd = args[0]
+    if cmd == 'pull-update':
+        cmd = 'pull-retarget'
     if not cmd in valid_commands:
         usage(1)
         

@@ -6,6 +6,7 @@ bin_SCRIPTS = fedora-cvs \
 	fedora-hosted \
 	rpmbuild-md5 \
 	fedpkg \
+	fedpkg-vcs \
 	sparc-koji \
 	s390-koji \
 	arm-koji \
@@ -18,6 +19,7 @@ EXTRA_DIST = src/fedora-cvs.py \
 	src/fedora-cert.py \
 	src/fedora-getsvn \
 	src/fedora-hosted.py \
+	src/fedpkg-vcs \
 	src/rpmbuild-md5 \
 	src/fedpkg.py \
 	src/secondary-koji
@@ -53,6 +55,10 @@ rpmbuild-md5: $(srcdir)/src/rpmbuild-md5
 fedpkg: $(srcdir)/src/fedpkg.py
 	rm -f fedpkg
 	install -p -m 755 -T $(srcdir)/src/fedpkg.py fedpkg
+	
+fedpkg-vcs: $(srcdir)/src/fedpkg-vcs
+	rm -f $@
+	install -p -m 755 -T $< $@
 
 sparc-koji: $(srcdir)/src/secondary-koji
 	rm -f sparc-koji

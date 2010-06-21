@@ -145,7 +145,7 @@ class Spec(object):
                 output.write(line)
             elif line.startswith('Release:') and self._new_release:
                 output.write(self.substitute_key('Release', self._new_release, line))
-            elif line.startswith('Source0:') and self._source_archivename:
+            elif (line.startswith('Source0:') or line.startswith('Source:') and self._source_archivename:
                 output.write(self.substitute_key('Source0', self._source_archivename, line))
             elif line.startswith('%setup') and self._source_dirname:  # This is dumb, need to automate this in RPM
                 output.write('%%setup -q -n %s\n' % self._source_dirname)

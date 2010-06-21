@@ -70,13 +70,15 @@ class Spec(object):
         assert not self._saved
         self._substitutions = substitutions
 
-    def substitute_key(self, key, new_value, string):
-        pattern = r'(%s:\s+)\S.*' % key
-        repl = "%s" % r'\g<1>%s' % new_value
+    def replace_key_line(self, key, new_value, line):
+        """Takes a line of the form "Release: 42  # foo" and replaces
+the 42 with new_value, preserving the comment # foo."""
+        comment = line.rfind('#')
+        if comment >= 0:
+            return '%s: %s %s\n' % (key, new_value, line[comment:])
+        else:
+            return '%s: %s\n' % (key, new_value)
 
-        subst = re.sub(pattern, repl, string)
-        return subst
-        
     def add_patch(self, filename):
         patches = self.get_patches()
         if len(patches) == 0:
@@ -143,18 +145,21 @@ class Spec(object):
                     break                
             if replacement_matched:
                 output.write(line)
-            elif line.startswith('Release:') and self._new_release:
-                output.write(self.substitute_key('Release', self._new_release, line))
-            elif (line.startswith('Source0:') or line.startswith('Source:') and
-                  self._source_archivename):
-                output.write(self.substitute_key('Source0', self._source_archivename, line))
             elif line.startswith('%setup') and self._source_dirname:  # This is dumb, need to automate this in RPM
                 output.write('%%setup -q -n %s\n' % self._source_dirname)
-            elif line.startswith('BuildRequires:') and not wrote_buildrequires:
-                output.write(line)
-                for req in self._append_buildrequires:
-                    output.write('BuildRequires: %s\n' % req)
-                wrote_buildrequires = True
+            elif ':' in line:
+                key, value = line.split(':', 1)
+                if key == 'Release' and self._new_release:
+                    output.write(self.replace_key_line(key, self._new_release, line))
+                elif (line.startswith('Source0:') or line.startswith('Source:')) and self._source_archivename:
+                    output.write(self.replace_key_line(key, self._source_archivename, line))
+                elif key == 'BuildRequires' and not wrote_buildrequires:
+                    output.write(line)
+                    for req in self._append_buildrequires:
+                        output.write('BuildRequires: %s\n' % req)
+                    wrote_buildrequires = True
+                else:
+                    output.write(line)
             else:
                 output.write(line)
                 

@@ -142,7 +142,6 @@ the 42 with new_value, preserving the comment # foo."""
                 (line, subcount) = sub_re.subn(replacement, line)
                 if subcount > 0:
                     replacement_matched = True
-                    break                
             if replacement_matched:
                 output.write(line)
             elif line.startswith('%setup') and self._source_dirname:  # This is dumb, need to automate this in RPM

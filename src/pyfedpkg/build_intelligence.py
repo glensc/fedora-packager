@@ -89,6 +89,7 @@ class AutogenAutotools(Autotools):
         # If we're not building from a tarball, we need to ensure gtk-doc
         # gets built.
         if 'gtk-doc' in self._bootstrap_requires:
-            subs.append((re.compile('(configure.*)--disable-gtk-doc'), r'\1'))
+            subs.append((re.compile('(%configure.*)--disable-gtk-doc'), r'\1'))
+            subs.append((re.compile('(%configure.*)'), r'\1 --enable-gtk-doc'))
         return subs 
         

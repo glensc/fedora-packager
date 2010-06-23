@@ -48,13 +48,13 @@ class Spec(object):
                     concat_line = line[:-2]
                 else:
                     concat_line += line[:-2]
+            elif concat_line:
+                out_lines.append(concat_line + line)
+                concat_line = None
             else:
-                if concat_line:
-                    out_lines.append(concat_line + '\n')
-                    concat_line = None
-                out_lines.append(line)    
+                out_lines.append(line)
         if concat_line:
-            out_lines.append(concat_line)
+            out_lines.append(concat_line + '\n')
         return out_lines 
 
     def get_name(self):
@@ -195,7 +195,7 @@ the 42 with new_value, preserving the comment # foo."""
                 for f in filters:
                     result = f(line)
                     if result is not None:
-                        output_lines[start+i] = line = f(line)
+                        output_lines[start+i] = line = result
 
         for i,line in enumerate(output_lines):
             if i == apply_patchmeta_at_line:

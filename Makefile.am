@@ -55,7 +55,7 @@ rpmbuild-md5: $(srcdir)/src/rpmbuild-md5
 fedpkg: $(srcdir)/src/fedpkg.py
 	rm -f fedpkg
 	install -p -m 755 -T $(srcdir)/src/fedpkg.py fedpkg
-	
+
 fedpkg-vcs: $(srcdir)/src/fedpkg-vcs
 	rm -f $@
 	install -p -m 755 -T $< $@
@@ -81,3 +81,5 @@ fedora_cert_PYTHON = $(wildcard $(srcdir)/src/fedora_cert/*.py)
 
 fedora_certdir = $(pythondir)/fedora_cert
 pyfedpkgdir = $(pythondir)/pyfedpkg
+
+TESTS = $(srcdir)/src/pyfedpkg/tests/run-tests.sh

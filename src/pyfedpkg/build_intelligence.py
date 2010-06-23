@@ -25,7 +25,7 @@ class BuildSystem(object):
     def get_bootstrap_buildrequires(self):
         return []
         
-    def get_substitutions(self):
+    def get_section_filters(self):
         return []
 
     def _file_matches(self, filename, pattern):
@@ -63,9 +63,14 @@ the contents of the file."""
 class Autotools(BuildSystem):
     def get_bootstrap_buildrequires(self):
         return ['libtool', 'automake', 'autoconf']
+
+    def _filter_build_line(self, line):
+        if line.startswith('%configure'):
+            return 'autoreconf -f -i && ' + line
+        return None
         
-    def get_substitutions(self):
-        return [(re.compile('^%configure'), 'autoreconf -f -i\n%configure')]
+    def get_section_filters(self):
+        return (('%build', self._filter_build_line), )
         
 class AutogenAutotools(Autotools):
     def __init__(self, directory):
@@ -76,20 +81,22 @@ class AutogenAutotools(Autotools):
         if 'gnome-common' in matches:
             matches.add('gtk-doc')
         self._bootstrap_requires = matches
+        self._ws_re = re.compile(r'\s+')
 
     def get_bootstrap_buildrequires(self):
         bootstrap = super(AutogenAutotools, self).get_bootstrap_buildrequires()
         for match in self._bootstrap_requires:
             bootstrap.append(match)
         return bootstrap
-        
-    def get_substitutions(self):
-        # We'll configure twice with this, but oh well.  Need this in RPM.
-        subs = [(re.compile('^%configure'), './autogen.sh && %configure')]
-        # If we're not building from a tarball, we need to ensure gtk-doc
-        # gets built.
-        if 'gtk-doc' in self._bootstrap_requires:
-            subs.append((re.compile('(%configure.*)--disable-gtk-doc'), r'\1'))
-            subs.append((re.compile('(%configure.*)'), r'\1 --enable-gtk-doc'))
-        return subs 
+    
+    def _filter_build_line(self, line):
+        if line.startswith('%configure'):
+            components = self._ws_re.split(line)[1:]
+            new_components = filter(lambda x: x != '--disable-gtk-doc', components)
+            new_components.append('--enable-gtk-doc')
+            return '%configure ' + ' '.join(components)
+        return None
+                
+    def get_section_filters(self):
+        return (('%build', self._filter_build_line), )
         

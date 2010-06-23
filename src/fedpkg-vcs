@@ -93,7 +93,8 @@ def _impl_retarget(spec, vcs, vcsdir, args=[], opts={}):
         print "WARNING: Unrecognized buildsystem in directory %r" % (vcsdir, )
     else:
         spec.add_buildrequires(buildsys.get_bootstrap_buildrequires())
-        spec.substitute(buildsys.get_substitutions())
+        for (section, f) in buildsys.get_section_filters():
+            spec.add_section_filter(section, f)
 
     spec.set_source(snapshot_dirname, snapshot_archivename)
     now = datetime.datetime.now()

@@ -15,19 +15,47 @@ import shutil
 import hashlib
 
 class Spec(object):
+    # These two constants were cribbed from rpm-spec-mode.el.
+    SECTIONS = ('%preamble', '%description', '%prep', '%setup',
+                '%build', '%install', '%check', '%clean',
+                '%changelog', '%files')
+    SCRIPTS = ('%pre', '%post', '%preun', '%postun',
+               '%trigger', '%triggerin', '%treiggerprein',
+               '%triggerun', '%triggerpostun', '%pretrans',
+               '%posttrans')
     def __init__(self, filename):
         self._filename = filename
         f = open(filename)
-        self._lines = f.readlines()
+        self._lines = self._read_lines_joining_backslash(f) 
         f.close()
         self._saved = False
-        
         self._append_buildrequires = []
         self._new_release = None
         self._source_dirname = None
         self._source_archivename = None
         self._substitutions = []
+        # Map from section name (e.g. '%build') -> (list of functions)
+        self._section_filters = {}
         self._added_patches = []
+
+    def _read_lines_joining_backslash(self, f):
+        lines = f.readlines()
+        concat_line = None
+        out_lines = []
+        for line in lines:
+            if line.endswith('\\\n'):
+                if concat_line is None:
+                    concat_line = line
+                else:
+                    concat_line += line[:-2]
+            else:
+                if concat_line:
+                    out_lines.append(concat_line)
+                    concat_line = None
+                out_lines.append(line)    
+        if concat_line:
+            out_lines.append(concat_line)
+        return out_lines 
 
     def get_name(self):
         return self._filename[:-5]
@@ -66,9 +94,37 @@ class Spec(object):
         self._source_dirname = dirname
         self._source_archivename = archivename
         
-    def substitute(self, substitutions):
-        assert not self._saved
-        self._substitutions = substitutions
+    def add_section_filter(self, name, function):
+        if not (name in self.SECTIONS or name in self.SCRIPTS):
+            raise KeyError("Invalid section name %r" % (name, ))
+        if name not in self._section_filters:
+            self._section_filters[name] = []
+        self._section_filters[name].append(function)
+
+    def _line_is_section(self, line):
+        for section in self.SECTIONS:
+            if line.startswith(section):
+                return True
+        for section in self.SCRIPTS:
+            if line.startswith(section):
+                return True
+        return False
+
+    def _get_range_for_section(self, name):
+        if not (name in self.SECTIONS or name in self.SCRIPTS):
+            raise KeyError("Invalid section name %r" % (name, ))
+        section_start = -1
+        section_end = -1
+        for i, line in enumerate(self._lines):
+            if line.startswith(name):
+                section_start = i
+            elif section_start >= 0:
+                if self._line_is_section(line):                
+                    section_end = i
+                    break
+        if section_start >= 0:
+            section_end = len(self._lines) - 1
+        return (section_start, section_end)
 
     def replace_key_line(self, key, new_value, line):
         """Takes a line of the form "Release: 42  # foo" and replaces
@@ -104,7 +160,10 @@ the 42 with new_value, preserving the comment # foo."""
         patch_re = re.compile(r'^Patch([0-9]+):')
         apply_re = re.compile(r'^%patch')
         highest_patchnum = -1
-        for i,line in enumerate(self._lines):
+
+        output_lines = self._lines
+
+        for i,line in enumerate(output_lines):
             match = patch_re.search(line)
             if match:
                 apply_patchmeta_at_line = i
@@ -129,7 +188,17 @@ the 42 with new_value, preserving the comment # foo."""
         if apply_patch_apply_at_line == -1:
             print "Error: Couldn't determine where to add %patch"
             sys.exit(1)
-        for i,line in enumerate(self._lines):
+        
+        for section,filters in self._section_filters.iteritems():
+            (start, end) = self._get_range_for_section(section)
+            splices = []
+            for i,line in enumerate(output_lines[start:end]):
+                for f in filters:
+                    result = f(line)
+                    if result is not None:
+                        output_lines[i] = line = f(line)
+
+        for i,line in enumerate(output_lines):
             if i == apply_patchmeta_at_line:
                 for pnum,patch in enumerate(self._added_patches):
                     output.write('Patch%d: %s\n' % (highest_patchnum + pnum + 1, patch))
@@ -137,14 +206,7 @@ the 42 with new_value, preserving the comment # foo."""
                 for pnum,patch in enumerate(self._added_patches):
                     output.write('%%patch%d -p1\n' % (highest_patchnum + pnum + 1, ))
         
-            replacement_matched = False
-            for sub_re, replacement in self._substitutions:
-                (line, subcount) = sub_re.subn(replacement, line)
-                if subcount > 0:
-                    replacement_matched = True
-            if replacement_matched:
-                output.write(line)
-            elif line.startswith('%setup') and self._source_dirname:  # This is dumb, need to automate this in RPM
+            if line.startswith('%setup') and self._source_dirname:  # This is dumb, need to automate this in RPM
                 output.write('%%setup -q -n %s\n' % self._source_dirname)
             elif ':' in line:
                 key, value = line.split(':', 1)

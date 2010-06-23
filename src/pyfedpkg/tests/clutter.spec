@@ -48,7 +48,9 @@ This package contains documentation for clutter.
 %setup -q
 
 %build
-%configure --enable-gtk-doc
+%configure --with-bar \
+	   --disable-gtk-doc \
+           --with-foo
 make %{?_smp_mflags}
 
 %install

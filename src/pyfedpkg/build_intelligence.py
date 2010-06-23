@@ -92,9 +92,10 @@ class AutogenAutotools(Autotools):
     def _filter_build_line(self, line):
         if line.startswith('%configure'):
             components = self._ws_re.split(line)[1:]
-            new_components = filter(lambda x: x != '--disable-gtk-doc', components)
-            new_components.append('--enable-gtk-doc')
-            return '%configure ' + ' '.join(components)
+            components = filter(lambda x: x != '--disable-gtk-doc', components)
+            if '--enable-gtk-doc' not in components:
+                components.append('--enable-gtk-doc')
+            return 'autogen.sh && %configure ' + ' '.join(components) + '\n'
         return None
                 
     def get_section_filters(self):

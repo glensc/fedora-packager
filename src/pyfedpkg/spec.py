@@ -45,12 +45,12 @@ class Spec(object):
         for line in lines:
             if line.endswith('\\\n'):
                 if concat_line is None:
-                    concat_line = line
+                    concat_line = line[:-2]
                 else:
                     concat_line += line[:-2]
             else:
                 if concat_line:
-                    out_lines.append(concat_line)
+                    out_lines.append(concat_line + '\n')
                     concat_line = None
                 out_lines.append(line)    
         if concat_line:
@@ -116,7 +116,7 @@ class Spec(object):
         section_start = -1
         section_end = -1
         for i, line in enumerate(self._lines):
-            if line.startswith(name):
+            if section_start == -1 and line.startswith(name):
                 section_start = i
             elif section_start >= 0:
                 if self._line_is_section(line):                
@@ -191,12 +191,11 @@ the 42 with new_value, preserving the comment # foo."""
         
         for section,filters in self._section_filters.iteritems():
             (start, end) = self._get_range_for_section(section)
-            splices = []
             for i,line in enumerate(output_lines[start:end]):
                 for f in filters:
                     result = f(line)
                     if result is not None:
-                        output_lines[i] = line = f(line)
+                        output_lines[start+i] = line = f(line)
 
         for i,line in enumerate(output_lines):
             if i == apply_patchmeta_at_line:

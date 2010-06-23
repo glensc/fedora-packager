@@ -15,18 +15,6 @@ class TestSpec(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self._tmpdir)
 
-    def testReadWrite(self):
-        spec = Spec(self._clutter_specpath)
-        new_specpath = os.path.join(self._tmpdir, os.path.basename(self._clutter_specpath))
-        spec.save_as(new_specpath)
-        f1 = open(self._clutter_specpath)
-        f2 = open(new_specpath)
-        lines_f1 = f1.readlines()
-        lines_f2 = f2.readlines()
-        f1.close()
-        f2.close()
-        self.assertEqual(lines_f1, lines_f2)
-
     def testBuildSectionFilter(self):
         spec = Spec(self._clutter_specpath)
         def build_filter(line):
@@ -39,7 +27,7 @@ class TestSpec(unittest.TestCase):
         f = open(new_specpath)
         found_autogen = False
         for line in f:
-            if line.startswith('autogen.sh &&'):
+            if line.startswith('autogen.sh && %configure'):
                 found_autogen = True
                 break
         f.close()

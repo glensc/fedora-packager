@@ -95,7 +95,7 @@ class AutogenAutotools(Autotools):
             components = filter(lambda x: x != '--disable-gtk-doc', components)
             if '--enable-gtk-doc' not in components:
                 components.append('--enable-gtk-doc')
-            return 'autogen.sh && %configure ' + ' '.join(components) + '\n'
+            return './autogen.sh && %configure ' + ' '.join(components) + '\n'
         return None
                 
     def get_section_filters(self):

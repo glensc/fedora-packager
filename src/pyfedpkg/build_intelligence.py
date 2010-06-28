@@ -77,7 +77,8 @@ class AutogenAutotools(Autotools):
         Autotools.__init__(self, directory)
         matches = self._file_matches_many('autogen.sh', 
                                           (('gnome-common', r'gnome-autogen\.sh'),
-                                           ('gtk-doc', r'gtkdocize')))
+                                           ('gtk-doc', r'gtkdocize'),
+                                           ('gettext-autopoint', r'autopoint')))
         if 'gnome-common' in matches:
             matches.add('gtk-doc')
         self._bootstrap_requires = matches

@@ -83,7 +83,7 @@ class GitVcs(Vcs):
     def checkout(self, destdir):
         self._vcs_exec(['git', 'clone', '--depth=1', self._nonfragment_url_string, destdir])
         if self._branch:
-            self._vcs_exec(['git', 'checkout', self._branch], cwd=destdir)
+            self._vcs_exec(['git', 'checkout', '-b', self._branch, 'origin/' + self._branch], cwd=destdir)
         
     def update(self, directory):
         if self._branch:

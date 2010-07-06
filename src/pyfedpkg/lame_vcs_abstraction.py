@@ -36,6 +36,11 @@ class Vcs(object):
     def update(self, directory):
         """Update directory from the latest upstream"""
         raise Exception("not implemented")
+
+    def export_archive(self, src_directory, prefix,
+                       target_filename):
+        """Export a tarball with minimal (or no) version control data."""
+        raise Exception("not implemented")
         
     def get_scheme(self):
         return self._parsed_url.scheme
@@ -89,6 +94,24 @@ class GitVcs(Vcs):
         if self._branch:
             self._vcs_exec(['git', 'checkout', self._branch], cwd=directory)
         self._vcs_exec(['git', 'pull', '-r'], cwd=directory)
+
+    def export_archive(self, src_directory, prefix, target_filename):
+        if not prefix.endswith('/'):
+            prefix += '/'
+        args = ['git', 'archive', '--format=tar', '--prefix=%s' % (prefix,), 'HEAD']
+        print "Running: %r" % (args, )
+        gitproc = subprocess.Popen(args, cwd=src_directory, stdout=subprocess.PIPE, stderr=sys.stderr)
+        if target_filename.endswith('.bz2'):
+            zipbin = 'bzip2'
+        elif target_filename.endswith('.gz'):
+            zipbin = 'gzip'
+        else:
+            raise ValueError("Unknown compression for filename %r" % (target_filename,))
+        args = [zipbin, '-c']
+        print "Running: %r" % (args, )
+        f = open(target_filename, 'w')
+        zipproc = subprocess.Popen(args, cwd=src_directory, stdout=f, stdin=gitproc.stdout, stderr=sys.stderr)
+        zipproc.wait()
         
     def get_commit_as_patch(self, directory, commitid, destfile):
         f = open(destfile, 'w')

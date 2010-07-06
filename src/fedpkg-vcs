@@ -86,7 +86,7 @@ def _impl_retarget(spec, vcs, vcsdir, args=[], opts={}):
 
     snapshot_dirname = '%s-%s%s%s' % (name, version, vcs.get_scheme(), abbrev_id)
     snapshot_archivename = snapshot_dirname + '.tar.bz2'
-    subprocess.check_call(['tar', '-cj', r'--transform=s,^\.,' + snapshot_dirname + ',', '-f', '../' + snapshot_archivename, '.'], cwd=vcsdir)
+    vcs.export_archive(vcsdir, snapshot_dirname, snapshot_archivename)
     
     buildsys = BuildSystem.new_from_directory(vcsdir)
     if buildsys is None:

@@ -23,22 +23,38 @@ def main(opts):
             username = fedora_cert.read_user_cert()
         except:
             print "Can't determine fas name, lets get a new cert"
-            fedora_cert.create_user_cert(None)
+            try:
+                fedora_cert.create_user_cert(None)
+            except  fedora_cert.fedora_cert_error, e:
+                print e
+                sys.exit(1)
             sys.exit(0)
     else:
         username = opts.username
     #has cert expired? do we force a new cert? get a new one
     if opts.newcert:
         print "Getting a new User Certificate"
-        fedora_cert.create_user_cert(username)
+        try:
+            fedora_cert.create_user_cert(username)
+        except  fedora_cert.fedora_cert_error, e:
+            print e
+            sys.exit(1)
         sys.exit(0)
     if fedora_cert.certificate_expired():
         print "Certificate has expired, getting a new one"
-        fedora_cert.create_user_cert(username)
+        try:
+            fedora_cert.create_user_cert(username)
+        except  fedora_cert.fedora_cert_error, e:
+            print e
+            sys.exit(1)
         sys.exit(0)
     if opts.verifycert:
         print "Verifying Certificate"
-        fedora_cert.verify_cert()
+        try:
+            fedora_cert.verify_cert()
+        except  fedora_cert.fedora_cert_error, e:
+            print e
+            sys.exit(1)
         print "CRL Checking not implemented yet"
      
 if __name__ == '__main__':

@@ -260,7 +260,7 @@ def switch_branch(branch=None, list=None):
     """
     if list:
         cmd = ['git', 'branch']
-        print "Listing branches"
+        log.info('Listing branches')
         cmd.extend(['-a'])
         _run_command(cmd)
     else:

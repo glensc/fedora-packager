@@ -650,7 +650,7 @@ if __name__ == '__main__':
     # Add help to -h and --help
     parser_help = subparsers.add_parser('help', help = 'Show usage')
     parser_help.set_defaults(command = usage)
-    
+
     # switch branches
     parser_switchbranch = subparsers.add_parser('switch-branch',
                                 help = 'Work with branches')
@@ -659,7 +659,7 @@ if __name__ == '__main__':
                                 help = 'List both remote-tracking branches and local branches',
                                 action = 'store_true')
     parser_switchbranch.set_defaults(command = switch_branch, replace = True)
-    
+
     # Add a common build parser to be used as a parent
     parser_build_common = subparsers.add_parser('build_common',
                                                 add_help = False)

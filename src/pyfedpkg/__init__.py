@@ -614,10 +614,33 @@ class PackageModule:
     def _findbranch(self):
         """Find the branch we're on"""
 
-        if not os.path.exists(os.path.join(self.path, 'branch')):
-            return 'devel'
-        branch = open(os.path.join(self.path, 'branch'), 'r').read().strip()
-        return branch
+        localbranch = self.repo.active_branch.name
+        merge = self.repo.git.config('--get', 'branch.%s.merge' % localbranch)
+        return(merge.split('/')[2])
+
+    def _findmasterbranch(self):
+        """Find the right "fedora" for master"""
+
+        # Create a list of "fedoras"
+        fedoras = []
+
+        # Create a regex to find f## branches.  Works until Fedora 100
+        branchre = re.compile('f\d\d')
+
+        # Find the repo refs
+        for ref in self.repo.refs:
+            # Only find the remote refs
+            if type(ref) == git.refs.RemoteReference:
+                # grab the top level name
+                branch = ref.name.split('/')[1]
+                if branchre.match(branch):
+                    # Add it to the fedoras
+                    fedoras.append(branch)
+
+        # Sort the list
+        fedoras.sort()
+        # Start with the last item, strip the f, add 1, return it.
+        return(int(fedoras[-1].strip('f')) + 1)
 
     def _getlocalarch(self):
         """Get the local arch as defined by rpm"""
@@ -639,29 +662,35 @@ class PackageModule:
         self.mockconfig = None
         # Set a place holder for kojisession
         self.kojisession = None
+        # Setup the repo
+        try:
+            self.repo = git.Repo(path)
+        except git.errors.InvalidGitRepositoryError:
+            raise FedpkgError('%s is not a valid repo' % path)
         # Find the branch and set things based from that
         # Still requires a 'branch' file in each branch
         self.branch = self._findbranch()
-        if self.branch.startswith('F-'):
-            self.distval = self.branch.split('-')[1]
+        if self.branch.startswith('f'):
+            self.distval = self.branch.split('f')[1]
             self.distvar = 'fedora'
             self.dist = '.fc%s' % self.distval
             self.target = 'dist-f%s-updates-candidate' % self.distval
             self.mockconfig = 'fedora-%s-%s' % (self.distval, self.localarch)
-        elif self.branch.startswith('EL-'):
-            self.distval = self.branch.split('-')[1]
+        elif self.branch.startswith('el'):
+            self.distval = self.branch.split('el')[1]
             self.distvar = 'epel'
             self.dist = '.el%s' % self.distval
             self.target = 'dist-%sE-epel-testing-candidate' % self.distval
             self.mockconfig = 'epel-%s-%s' % (self.distval, self.localarch)
-        elif self.branch.startswith('OLPC-'):
-            self.distval = self.branch.split('-')[1]
+        elif self.branch.startswith('olpc'):
+            self.distval = self.branch.split('olpc')[1]
             self.distvar = 'olpc'
             self.dist = '.olpc%s' % self.distval
             self.target = 'dist-olpc%s' % self.distval
-        # Need to do something about no branch here
-        elif self.branch == 'devel':
-            self.distval = '14' # this is hardset for now, which is bad
+        # If we don't match one of the above, assume master or a branch of
+        # master
+        else:
+            self.distval = self._findmasterbranch()
             self.distvar = 'fedora'
             self.dist = '.fc%s' % self.distval
             self.target = 'dist-f%s' % self.distval # will be dist-rawhide
@@ -676,10 +705,6 @@ class PackageModule:
                            "--define '%s 1'" % self.distvar]
         self.ver = self.getver()
         self.rel = self.getrel()
-        try:
-            self.repo = git.Repo(path)
-        except git.errors.InvalidGitRepositoryError:
-            raise FedpkgError('%s is not a valid repo' % path)
 
     def build(self, skip_tag=False, scratch=False, background=False,
               url=None, chain=None):

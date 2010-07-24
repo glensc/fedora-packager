@@ -878,7 +878,7 @@ packages will be built sequentially.
     parser_switchbranch.add_argument('-l', '--list',
                                 help = 'List both remote-tracking branches and local branches',
                                 action = 'store_true')
-    parser_switchbranch.set_defaults(command = switch_branch, replace = True)
+    parser_switchbranch.set_defaults(command = switch_branch)
 
     # Create a releng tag request
     parser_tagrequest = subparsers.add_parser('tag-request',

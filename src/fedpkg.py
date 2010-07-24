@@ -586,16 +586,25 @@ def srpm(args):
         sys.exit(1)
 
 def switch_branch(args):
+    try:
+        mymodule = pyfedpkg.PackageModule(args.path)
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not init the module')
+        sys.exit(1)
     if args.branch:
         try:
-            pyfedpkg.switch_branch(args.branch)
+            mymodule.switch_branch(args.branch)
         except pyfedpkg.FedpkgError, e:
-            log.debug('Unable to switch to another branch: %s' % e)
+            log.error('Unable to switch to another branch: %s' % e)
+            sys.exit(1)
     else:
         try:
-            pyfedpkg.switch_branch(list=1)
+            (locals, remotes) = mymodule.list_branches()
         except pyfedpkg.FedpkgError, e:
-            log.debug('Unable to list branches: %s' % e)
+            log.error('Unable to list branches: %s' % e)
+            sys.exit(1)
+        print('Locals:\n  %s\nRemotes:\n  %s' %
+              ('\n  '.join(locals), '\n  '.join(remotes)))
 
 def tagrequest(args):
     # not implimented
@@ -874,7 +883,8 @@ packages will be built sequentially.
     # switch branches
     parser_switchbranch = subparsers.add_parser('switch-branch',
                                 help = 'Work with branches')
-    parser_switchbranch.add_argument('branch',  nargs = '?')
+    parser_switchbranch.add_argument('branch',  nargs = '?',
+                                     help = 'Switch to or create branch')
     parser_switchbranch.add_argument('-l', '--list',
                                 help = 'List both remote-tracking branches and local branches',
                                 action = 'store_true')

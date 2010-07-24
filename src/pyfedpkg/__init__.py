@@ -24,6 +24,8 @@ import ConfigParser
 import stat
 import StringIO
 import tempfile
+import OpenSSL
+
 
 # Define some global variables, put them here to make it easy to change
 LOOKASIDE = 'http://cvs.fedoraproject.org/repo/pkgs'
@@ -1048,7 +1050,6 @@ class PackageModule:
         # save the weburl for later use too
         self.kojiweburl = defaults['weburl']
         # log in using ssl
-        import OpenSSL
         try:
             self.kojisession.ssl_login(defaults['cert'], defaults['ca'],
                                        defaults['serverca'])

@@ -419,8 +419,7 @@ def commit(args):
         log.error('Could not commit: %s' % e)
         sys.exit(1)
     if args.push:
-        # do the push command here.
-        pass
+        push(args)
 
 def compile(args):
     arch = None
@@ -557,6 +556,14 @@ def prep(args):
         return mymodule.prep(arch=arch)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not prep: %s' % e)
+        sys.exit(1)
+
+def push(args):
+    try:
+        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule.push()
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not push: %s' % e)
         sys.exit(1)
 
 def scratchbuild(args):
@@ -854,6 +861,11 @@ packages will be built sequentially.
                                         help = 'Local test rpmbuild prep')
     parser_prep.add_argument('--arch', help = 'Prep for a specific arch')
     parser_prep.set_defaults(command = prep)
+
+    # Push stuff
+    parser_push = subparsers.add_parser('push',
+                                help = 'Push changes to remote repository')
+    parser_push.set_defaults(command = push)
 
     # scratch build
     parser_scratchbuild = subparsers.add_parser('scratch-build',

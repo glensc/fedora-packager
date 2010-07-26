@@ -1266,6 +1266,15 @@ class PackageModule:
         if error:
             log.error(error)
         return proc.returncode
+
+    def push(self):
+        """Push changes to the main repository"""
+
+        cmd = ['git', 'push']
+        _run_command(cmd)
+        return
+
+
                
     def sources(self, outdir=None):
         """Download source files"""

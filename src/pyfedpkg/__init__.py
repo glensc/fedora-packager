@@ -270,7 +270,11 @@ def clone(module, user, path=os.getcwd(), branch=None, bare_dir=None):
     """
 
     # construct the git url
-    giturl = GITBASEURL % {'user': user, 'module': module}
+    if user:
+        giturl = GITBASEURL % {'user': user, 'module': module}
+    else:
+        giturl = ANONGITURL % {'module': module}
+
     # Create the command
     cmd = ['git', 'clone']
     # do the clone

@@ -394,7 +394,7 @@ def clog(args):
         sys.exit(1)
 
 def clone(args):
-    if not args.user:
+    if not args.user and not args.anonymous:
         # Doing a try doesn't really work since the fedora_cert library just
         # exits on error, but if that gets fixed this will work better.
         try:
@@ -738,6 +738,10 @@ packages will be built sequentially.
     # provide a convenient way to get to a specific branch
     parser_clone.add_argument('--branch', '-b',
                               help = 'Check out a specific branch')
+    # allow to clone without needing a account on the fedora buildsystem
+    parser_clone.add_argument('--anonymous', '-a',
+                              action = 'store_true',
+                              help = 'Check out a branch anonymously')
     # store the module to be cloned
     parser_clone.add_argument('module', nargs = 1,
                               help = 'Name of the module to clone')

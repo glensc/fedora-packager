@@ -28,11 +28,11 @@ import OpenSSL
 
 
 # Define some global variables, put them here to make it easy to change
-LOOKASIDE = 'http://cvs.fedoraproject.org/repo/pkgs'
+LOOKASIDE = 'http://pkgs.fedoraproject.org/repo/pkgs'
 LOOKASIDEHASH = 'md5'
-LOOKASIDE_CGI = 'https://cvs.fedoraproject.org/repo/pkgs/upload.cgi'
-GITBASEURL = 'ssh://%(user)s@pkgs.stg.fedoraproject.org/%(module)s'
-ANONGITURL = 'git://pkgs.stg.fedoraproject.org/%(module)s'
+LOOKASIDE_CGI = 'https://pkgs.fedoraproject.org/repo/pkgs/upload.cgi'
+GITBASEURL = 'ssh://%(user)s@pkgs.fedoraproject.org/%(module)s'
+ANONGITURL = 'git://pkgs.fedoraproject.org/%(module)s'
 UPLOADEXTS = ['tar', 'gz', 'bz2', 'lzma', 'xz', 'Z', 'zip', 'tff', 'bin',
               'tbz', 'tbz2', 'tlz', 'txz', 'pdf', 'rpm', 'jar', 'war', 'db',
               'cpio', 'jisp', 'egg', 'gem']

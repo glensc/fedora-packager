@@ -36,7 +36,7 @@ ANONGITURL = 'git://pkgs.fedoraproject.org/%(module)s'
 UPLOADEXTS = ['tar', 'gz', 'bz2', 'lzma', 'xz', 'Z', 'zip', 'tff', 'bin',
               'tbz', 'tbz2', 'tlz', 'txz', 'pdf', 'rpm', 'jar', 'war', 'db',
               'cpio', 'jisp', 'egg', 'gem']
-BRANCHFILTER = 'FC?-\d\d?|master'
+BRANCHFILTER = 'f\d\d\/master|master|el\d\/master|olpc\d\/master'
 
 # Define our own error class
 class FedpkgError(Exception):
@@ -322,10 +322,11 @@ def clone_with_dirs(module, user, path=os.getcwd()):
     for branch in branches:
         try:
             # Make a local clone for our branch
-            top_git.clone("--branch", branch, repo_path, branch)
+            top_git.clone("--branch", branch, repo_path,
+                          branch.split('/master')[0])
 
             # Set the origin correctly
-            branch_path = os.path.join(top_path, branch)
+            branch_path = os.path.join(top_path, branch.split('/master')[0])
             branch_git = git.Git(branch_path)
             branch_git.config("--replace-all", "remote.origin.url",
                     GITBASEURL % {'user': user, 'module': module})

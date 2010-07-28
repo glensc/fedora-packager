@@ -724,8 +724,10 @@ class PackageModule:
                 raise FedpkgError('There are uncommitted changes in your repo')
             # Need to check here to see if the local commit you want to build is
             # pushed or not
-            # This doesn't work if the local branch name doesn't match the remote
-            if self.repo.git.rev_list('...origin/%s' % self.repo.active_branch):
+            branch = self.repo.active_branch
+            remote = self.repo.git.config('--get',
+                'branch.%s.merge' % branch).replace('refs/heads', 'origin')
+            if self.repo.git.rev_list('%s...%s' % (branch, remote)):
                 raise FedpkgError('There are unpushed changes in your repo')
             # Get the commit hash to build
             commit = self.repo.iter_commits().next().sha

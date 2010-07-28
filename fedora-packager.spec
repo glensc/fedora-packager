@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.0
+Version:        0.5.0.1
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -52,6 +52,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/fedora_cert
 
 %changelog
+* Wed Jul 28 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.0.1-1
+- Fix checking for unpushed changes on a branch
+
 * Wed Jul 28 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.0-1
 - update to 0.5.0 with the switch to dist-git
 

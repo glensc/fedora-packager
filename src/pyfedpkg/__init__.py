@@ -455,6 +455,63 @@ def new(path=os.getcwd()):
     log.debug('Diffing from tag %s' % tag)
     return repo.git.diff('-M', tag)
 
+def sources(path, outdir=None):
+    """Download source files"""
+
+    # Get the module name
+    spec = None
+    # Get a list of files in the path we're looking at
+    files = os.listdir(path)
+    # Search the files for the first one that ends with ".spec"
+    for f in files:
+        if f.endswith('.spec'):
+            spec = f
+            break
+    if not spec:
+        raise FedpkgError('%s is not a valid repo' % path)
+    module = spec.split('.spec')[0]
+    archives = open(os.path.join(path, 'sources'),
+                    'r').readlines()
+    # Default to putting the files where the module is
+    if not outdir:
+        outdir = path
+    for archive in archives:
+        csum, file = archive.split()
+        # See if we already have a valid copy downloaded
+        outfile = os.path.join(outdir, file)
+        if os.path.exists(outfile):
+            if _verify_file(outfile, csum, LOOKASIDEHASH):
+                continue
+        url = '%s/%s/%s/%s/%s' % (LOOKASIDE, module, file, csum,
+                                  file)
+        # There is some code here for using pycurl, but for now,
+        # just use subprocess
+        #output = open(file, 'wb')
+        #curl = pycurl.Curl()
+        #curl.setopt(pycurl.URL, url)
+        #curl.setopt(pycurl.FOLLOWLOCATION, 1)
+        #curl.setopt(pycurl.MAXREDIRS, 5)
+        #curl.setopt(pycurl.CONNECTTIMEOUT, 30)
+        #curl.setopt(pycurl.TIMEOUT, 300)
+        #curl.setopt(pycurl.WRITEDATA, output)
+        #try:
+        #    curl.perform()
+        #except:
+        #    print "Problems downloading %s" % url
+        #    curl.close()
+        #    output.close()
+        #    return 1
+        #curl.close()
+        #output.close()
+        # These options came from Makefile.common.
+        # Probably need to support wget too
+        command = ['curl', '-H',  'Pragma:', '-O', '-R', '-S',  '--fail',
+                   '--show-error', url]
+        _run_command(command)
+        if not _verify_file(outfile, csum, LOOKASIDEHASH):
+            raise FedpkgError('%s failed checksum' % file)
+    return
+
 
 class Lookaside(object):
     """ Object for interacting with the lookaside cache. """
@@ -869,7 +926,7 @@ class PackageModule:
         """
 
         # Get the sources
-        self.sources()
+        sources(self.path)
         # setup the rpm command
         cmd = ['rpmbuild']
         cmd.extend(self.rpmdefines)
@@ -1050,7 +1107,7 @@ class PackageModule:
         """
 
         # Get the sources
-        self.sources()
+        sources(self.path)
         # setup the rpm command
         cmd = ['rpmbuild']
         cmd.extend(self.rpmdefines)
@@ -1121,7 +1178,7 @@ class PackageModule:
 
         # This could really use a list of arches to build for and loop over
         # Get the sources
-        self.sources()
+        sources(self.path)
         # Determine arch to build for
         if not arch:
             arch = self.localarch
@@ -1250,7 +1307,7 @@ class PackageModule:
         """
 
         # Get the sources
-        self.sources()
+        sources(self.path)
         # setup the rpm command
         cmd = ['rpmbuild']
         cmd.extend(self.rpmdefines)
@@ -1275,53 +1332,6 @@ class PackageModule:
 
         cmd = ['git', 'push']
         _run_command(cmd)
-        return
-
-
-               
-    def sources(self, outdir=None):
-        """Download source files"""
-    
-        archives = open(os.path.join(self.path, 'sources'),
-                        'r').readlines()
-        # Default to putting the files where the module is
-        if not outdir:
-            outdir = self.path
-        for archive in archives:
-            csum, file = archive.split()
-            # See if we already have a valid copy downloaded
-            outfile = os.path.join(outdir, file)
-            if os.path.exists(outfile):
-                if _verify_file(outfile, csum, self.lookasidehash):
-                    continue
-            url = '%s/%s/%s/%s/%s' % (self.lookaside, self.module, file, csum,
-                                      file)
-            # There is some code here for using pycurl, but for now,
-            # just use subprocess
-            #output = open(file, 'wb')
-            #curl = pycurl.Curl()
-            #curl.setopt(pycurl.URL, url)
-            #curl.setopt(pycurl.FOLLOWLOCATION, 1)
-            #curl.setopt(pycurl.MAXREDIRS, 5)
-            #curl.setopt(pycurl.CONNECTTIMEOUT, 30)
-            #curl.setopt(pycurl.TIMEOUT, 300)
-            #curl.setopt(pycurl.WRITEDATA, output)
-            #try:
-            #    curl.perform()
-            #except:
-            #    print "Problems downloading %s" % url
-            #    curl.close()
-            #    output.close()
-            #    return 1
-            #curl.close()
-            #output.close()
-            # These options came from Makefile.common.
-            # Probably need to support wget too
-            command = ['curl', '-H',  'Pragma:', '-O', '-R', '-S',  '--fail',
-                       '--show-error', url]
-            _run_command(command)
-            if not _verify_file(outfile, csum, self.lookasidehash):
-                raise FedpkgError('%s failed checksum' % file)
         return
 
     def srpm(self, hashtype='sha256'):

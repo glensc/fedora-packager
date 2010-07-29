@@ -574,8 +574,7 @@ def scratchbuild(args):
 
 def sources(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
-        mymodule.sources(args.outdir)
+        pyfedpkg.sources(args.path, args.outdir)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not download sources: %s' % e)
         sys.exit(1)
@@ -583,7 +582,7 @@ def sources(args):
 def srpm(args):
     try:
         mymodule = pyfedpkg.PackageModule(args.path)
-        mymodule.sources(args.path)
+        pyfedpkg.sources(args.path)
         if args.md5:
             mymodule.srpm('md5')
         else:

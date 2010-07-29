@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.0.1
+Version:        0.5.1.0
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -21,6 +21,9 @@ Requires:       pyOpenSSL python-pycurl
 Requires:       redhat-rpm-config
 Requires:       python-offtrac
 Requires:       GitPython >= 0.2.0, python-argparse
+%if 0%{?rhel}== 5 || 0%{?rhel} == 4
+Requires:       python-kitchen
+%endif
 
 BuildArch:      noarch
 
@@ -52,6 +55,11 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/fedora_cert
 
 %changelog
+* Thu Jul 29 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.1.0-1
+- wrap fedora-cert in try except 
+-fedpkg fixes
+- require python-kitchen on EL-4 and 5
+
 * Wed Jul 28 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.0.1-1
 - Fix checking for unpushed changes on a branch
 

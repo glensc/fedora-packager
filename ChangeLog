@@ -1,3 +1,8 @@
+* Thu Jul 29 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.1.0
+- wrap fedora-cert in try except 
+-fedpkg fixes
+- require python-kitchen on EL-4 and 5
+
 * Wed Jul 28 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.0.1
 - Fix checking for unpushed changes on a branch
 

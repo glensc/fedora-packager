@@ -14,7 +14,10 @@ import sys
 import shutil
 import re
 import pycurl
-import subprocess
+try:
+    from kitchen.pycompat27 import subprocess
+except ImportError:
+    import subprocess
 import hashlib
 import koji
 import rpm

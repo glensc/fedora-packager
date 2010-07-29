@@ -278,6 +278,12 @@ def clone(module, user, path=os.getcwd(), branch=None, bare_dir=None):
     else:
         giturl = ANONGITURL % {'module': module}
 
+    # do some branch name conversions
+    if branch:
+        remotere = 'f\d\d|el\d|olpc\d'
+        if re.match(remotere, branch):
+            branch = '%s/master' % branch
+
     # Create the command
     cmd = ['git', 'clone']
     # do the clone

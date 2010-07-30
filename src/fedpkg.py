@@ -21,6 +21,9 @@ import xmlrpclib
 import time
 import random
 import string
+import re
+import hashlib
+import textwrap
 
 # Define packages which belong to specific secondary arches
 # This is ugly and should go away.  A better way to do this is to have a list
@@ -627,8 +630,76 @@ def unusedpatches(args):
     print('\n'.join(unused))
 
 def update(args):
-    # not implimented
-    log.warning('Not implimented yet, got %s' % args)
+    """Submit a new update to bodhi"""
+    mymodule = pyfedpkg.PackageModule(args.path)
+    nvr = '%s-%s-%s' % (mymodule.module, mymodule.ver, mymodule.rel)
+    template = """\
+    [ %(nvr)s ]
+
+    # bugfix, security, enhancement, newpackage (required)
+    type=
+
+    # testing, stable
+    request=testing
+
+    # Bug numbers: 1234,9876
+    bugs=%(bugs)s
+
+    # Description of your update
+    notes=Here is where you
+        give an explanation of
+        your update.
+
+    # Enable request automation based on the stable/unstable karma thresholds
+    autokarma=True
+    stable_karma=3
+    unstable_karma=-3
+
+    # Automatically close bugs when this marked as stable
+    close_bugs=True
+
+    # Suggest that users restart after update
+    suggest_reboot=False\
+    """
+    args = {'nvr': nvr, 'bugs': ''}
+
+    # Extract bug numbers from the latest changelog entry
+    mymodule.clog()
+    clog = file('clog').read()
+    bugs = re.findall(r'#([0-9]*)', clog)
+    if bugs:
+        args['bugs'] = ','.join(bugs)
+
+    template = textwrap.dedent(template) % args
+
+    # Calculate the hash of the unaltered template
+    orig_hash = hashlib.new('sha1')
+    orig_hash.update(template)
+    orig_hash = orig_hash.hexdigest()
+
+    # Write out the template
+    out = file('bodhi.template', 'w')
+    out.write(template)
+    out.close()
+
+    # Open the template in a text editor
+    editor = os.getenv('EDITOR', 'vi')
+    pyfedpkg._run_command([editor, 'bodhi.template'], shell=True)
+
+    # If the template was changed, submit it to bodhi
+    hash = pyfedpkg._hash_file('bodhi.template', 'sha1')
+    if hash != orig_hash:
+        cmd = ['bodhi', '--new', '--release', mymodule.branch, '--file',
+               'bodhi.template', nvr, '--username',
+               os.getenv('BODHI_USER', os.getenv('USER'))]
+        pyfedpkg._run_command(cmd, shell=True)
+    else:
+        log.info('Bodhi update aborted!')
+
+    # Clean up
+    os.unlink('bodhi.template')
+    os.unlink('clog')
+
 
 def verrel(args):
     try:

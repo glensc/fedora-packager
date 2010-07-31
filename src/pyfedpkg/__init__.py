@@ -26,7 +26,6 @@ import git
 import ConfigParser
 import stat
 import StringIO
-import tempfile
 import OpenSSL
 
 

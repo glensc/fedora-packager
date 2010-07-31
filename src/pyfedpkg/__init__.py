@@ -59,7 +59,7 @@ log = logging.getLogger("fedpkg")
 log.addHandler(h)
 
 # Define some helper functions, they start with _
-def _hash_file(file, Hashtype):
+def _hash_file(file, hashtype):
     """Return the hash of a file given a hash type"""
 
     try:

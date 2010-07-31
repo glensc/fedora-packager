@@ -59,7 +59,7 @@ log = logging.getLogger("fedpkg")
 log.addHandler(h)
 
 # Define some helper functions, they start with _
-def _hash_file(file, hashtype):
+def _hash_file(file, Hashtype):
     """Return the hash of a file given a hash type"""
 
     try:
@@ -359,7 +359,9 @@ def get_latest_commit(module):
 
     # This is stupid that I have to use subprocess :/
     url = ANONGITURL % {'module': module}
-    cmd = ['git', 'ls-remote', url, 'master']
+    # This cmd below only works to scratch build rawhide
+    # We need something better for epel
+    cmd = ['git', 'ls-remote', url, 'refs/heads/master']
     try :
         proc = subprocess.Popen(cmd, stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE)

@@ -877,10 +877,6 @@ class PackageModule:
         # Then remove any lines that start with $ or %, and then replace
         # %% with %
 
-        # This should probably change behavior from dist-cvs and not print
-        # the first line with the date/name/version as git has that info
-        # already and it would be redundant.
-
         cloglines = []
         spec = open(os.path.join(self.path, self.spec), 'r').readlines()
         for line in spec:
@@ -892,6 +888,9 @@ class PackageModule:
                     if line2.startswith('$'):
                         continue
                     if line2.startswith('%'):
+                        continue
+                    if line2.startswith('*'):
+                        # skip the email n/v/r line.  Redundant
                         continue
                     cloglines.append(line2.replace('%%', '%'))
         # Now open the clog file and write out the lines

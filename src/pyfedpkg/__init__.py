@@ -846,6 +846,9 @@ class PackageModule:
             log.debug('Adding %s to the chain' % url)
             chain[-1].append(url)
             cmd.append(url)
+            log.info('Chain building %s + %s for %s' % (self.nvr,
+                                                        chain,
+                                                        self.target))
             log.debug('Building chain %s for %s with options %s and a ' \
                       'priority of %s' %
                       (chain, self.target, opts, priority))

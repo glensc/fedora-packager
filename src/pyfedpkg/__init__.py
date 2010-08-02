@@ -760,6 +760,7 @@ class PackageModule:
                            "--define '%s 1'" % self.distshort]
         self.ver = self.getver()
         self.rel = self.getrel()
+        self.nvr = '%s-%s-%s' % (self.module, self.ver, self.rel)
 
     def build(self, skip_tag=False, scratch=False, background=False,
               url=None, chain=None):
@@ -854,6 +855,7 @@ class PackageModule:
         # Now handle the normal build
         else:
             cmd.append(url)
+            log.info('Building %s for %s' % (self.nvr, self.target))
             log.debug('Building %s for %s with options %s and a priority of %s' %
                       (url, self.target, opts, priority))
             log.debug(subprocess.list2cmdline(cmd))

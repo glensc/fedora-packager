@@ -785,21 +785,18 @@ class PackageModule:
         if self.branch.startswith('f'):
             self.distval = self.branch.split('f')[1]
             self.distvar = 'fedora'
-            self.distshort = 'fc%s' % self.distval
             self.dist = '.fc%s' % self.distval
             self.target = 'dist-f%s-updates-candidate' % self.distval
             self.mockconfig = 'fedora-%s-%s' % (self.distval, self.localarch)
         elif self.branch.startswith('el'):
             self.distval = self.branch.split('el')[1]
-            self.distvar = 'rhel'
-            self.distshort = 'el%s' % self.distval
+            self.distvar = 'epel'
             self.dist = '.el%s' % self.distval
             self.target = 'dist-%sE-epel-testing-candidate' % self.distval
             self.mockconfig = 'epel-%s-%s' % (self.distval, self.localarch)
         elif self.branch.startswith('olpc'):
             self.distval = self.branch.split('olpc')[1]
             self.distvar = 'olpc'
-            self.distshort = 'olpc%s' % self.distval
             self.dist = '.olpc%s' % self.distval
             self.target = 'dist-olpc%s' % self.distval
         # If we don't match one of the above, assume master or a branch of
@@ -818,7 +815,7 @@ class PackageModule:
                            "--define '_rpmdir %s'" % path,
                            "--define 'dist %s'" % self.dist,
                            "--define '%s %s'" % (self.distvar, self.distval),
-                           "--define '%s 1'" % self.distshort]
+                           "--define '%s 1'" % self.distvar]
         self.ver = self.getver()
         self.rel = self.getrel()
         self.nvr = '%s-%s-%s' % (self.module, self.ver, self.rel)

@@ -592,20 +592,15 @@ def srpm(args):
         sys.exit(1)
 
 def switch_branch(args):
-    try:
-        mymodule = pyfedpkg.PackageModule(args.path)
-    except pyfedpkg.FedpkgError, e:
-        log.error('Could not init the module')
-        sys.exit(1)
     if args.branch:
         try:
-            mymodule.switch_branch(args.branch)
+            pyfedpkg.switch_branch(args.branch, args.path)
         except pyfedpkg.FedpkgError, e:
             log.error('Unable to switch to another branch: %s' % e)
             sys.exit(1)
     else:
         try:
-            (locals, remotes) = mymodule.list_branches()
+            (locals, remotes) = pyfedpkg._list_branches(path=args.path)
         except pyfedpkg.FedpkgError, e:
             log.error('Unable to list branches: %s' % e)
             sys.exit(1)

@@ -183,6 +183,29 @@ def _get_build_arches_from_srpm(srpm, arches):
         raise FedpkgError('No compatible build arches found in %s' % srpm)
     return archlist
 
+def _list_branches(path=os.getcwd(), repo=None):
+    """Returns a tuple of local and remote branch names"""
+
+    # Create the repo from path if no repo passed
+    if not repo:
+        repo = git.Repo(path)
+    log.debug('Listing refs')
+    refs = repo.refs
+    # Sort into local and remote branches
+    remotes = []
+    locals = []
+    for ref in refs:
+        if type(ref) == git.Head:
+            log.debug('Found local branch %s' % ref.name)
+            locals.append(ref.name)
+        elif type(ref) == git.RemoteReference:
+            if ref.name == 'origin/HEAD':
+                log.debug('Skipping remote branch alias origin/HEAD')
+                continue # Not useful in this context
+            log.debug('Found remote branch %s' % ref.name)
+            remotes.append(ref.name)
+    return (locals, remotes)
+
 def _srpmdetails(srpm):
     """Return a tuple of package name, package files, and upload files."""
 
@@ -520,6 +543,43 @@ def sources(path, outdir=None):
         _run_command(command)
         if not _verify_file(outfile, csum, LOOKASIDEHASH):
             raise FedpkgError('%s failed checksum' % file)
+    return
+
+def switch_branch(branch, path=os.getcwd()):
+    """Switch the working branch
+
+    Will create a local branch if one doesn't already exist,
+    based on origin/<branch>/master
+
+    Logs output and returns nothing.
+    """
+
+    # setup the repo object based on our path
+    try:
+        repo = git.Repo(path)
+    except git.errors.InvalidGitRepositoryError:
+        raise FedpkgError('%s is not a valid repo' % path)
+
+    # Get our list of branches
+    (locals, remotes) = _list_branches(repo=repo)
+
+    if not branch in locals:
+        # We need to create a branch
+        log.debug('No local branch found, creating a new one')
+        if not 'origin/%s/master' % branch in remotes:
+            raise FedpkgError('Unknown remote branch %s' % branch)
+        try:
+            log.info(repo.git.checkout('-b', branch, '--track',
+                                       'origin/%s/master' % branch))
+        except: # this needs to be finer grained I think...
+            raise FedpkgError('Could not create branch %s' % branch)
+    else:
+        try:
+            output = repo.git.checkout(branch)
+            # The above shoudl have no output, but stash it anyway
+            log.info("Switched to branch '%s'" % branch)
+        except: # This needs to be finer grained I think...
+            raise FedpkgError('Could not check out %s' % branch)
     return
 
 
@@ -1162,26 +1222,6 @@ class PackageModule:
         _run_command(cmd, shell=True)
         return
 
-    def list_branches(self):
-        """Returns a tuple of local and remote branch names"""
-
-        log.debug('Listing refs')
-        refs = self.repo.refs
-        # Sort into local and remote branches
-        remotes = []
-        locals = []
-        for ref in refs:
-            if type(ref) == git.Head:
-                log.debug('Found local branch %s' % ref.name)
-                locals.append(ref.name)
-            elif type(ref) == git.RemoteReference:
-                if ref.name == 'origin/HEAD':
-                    log.debug('Skipping remote branch alias origin/HEAD')
-                    continue # Not useful in this context
-                log.debug('Found remote branch %s' % ref.name)
-                remotes.append(ref.name)
-        return (locals, remotes)
-
     def local(self, arch=None, hashtype='sha256'):
         """rpmbuild locally for given arch.
 
@@ -1366,37 +1406,6 @@ class PackageModule:
                     "--define '_binary_filedigest_algorithm %s'" % hashtype])
         cmd.extend(['--nodeps', '-bs', os.path.join(self.path, self.spec)])
         _run_command(cmd, shell=True)
-        return
-
-    def switch_branch(self, branch):
-        """Switch the working branch
-
-        Will create a local branch if one doesn't already exist,
-        based on origin/<branch>/master
-
-        Logs output and returns nothing.
-        """
-
-        # Get our list of branches
-        (locals, remotes) = self.list_branches()
-
-        if not branch in locals:
-            # We need to create a branch
-            log.debug('No local branch found, creating a new one')
-            if not 'origin/%s/master' % branch in remotes:
-                raise FedpkgError('Unknown remote branch %s' % branch)
-            try:
-                log.info(self.repo.git.checkout('-b', branch, '--track',
-                                                'origin/%s/master' % branch))
-            except: # this needs to be finer grained I think...
-                raise FedpkgError('Could not create branch %s' % branch)
-        else:
-            try:
-                output = self.repo.git.checkout(branch)
-                # The above shoudl have no output, but stash it anyway
-                log.info("Switched to branch '%s'" % branch)
-            except: # This needs to be finer grained I think...
-                raise FedpkgError('Could not check out %s' % branch)
         return
 
     def unused_patches(self):

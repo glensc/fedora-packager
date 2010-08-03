@@ -143,7 +143,7 @@ def _get_secondary_config(mymodule):
 
     arch = _is_secondary(mymodule.module)
     if arch:
-        if arch == 'ppc' and mymodule.distvar == 'feodra' and \
+        if arch == 'ppc' and mymodule.distvar == 'fedora' and \
            mymodule.distval < '13':
             return None
         return os.path.expanduser('~/.koji/%s-config' % arch)

@@ -1,4 +1,4 @@
-AC_INIT([fedora-packager], [0.5.1.0])
+AC_INIT([fedora-packager], [0.5.1.1])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 AM_PATH_PYTHON(,, [:])
 AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])

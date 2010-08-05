@@ -293,6 +293,8 @@ def build(args):
         log.error('Could not use module: %s' % e)
         sys.exit(1)
     kojiconfig = _get_secondary_config(mymodule)
+    if args.target:
+        mymodule.target = args.target
     try:
         mymodule.init_koji(args.user, kojiconfig)
     except pyfedpkg.FedpkgError, e:
@@ -667,6 +669,9 @@ if __name__ == '__main__':
     parser_build_common.add_argument('--nowait', action = 'store_true',
                                      default = False,
                                      help = "Don't wait on build")
+    parser_build_common.add_argument('--target',
+                                     default = None,
+                                     help = 'Define koji target to build into')
     parser_build_common.add_argument('--background', action = 'store_true',
                                      default = False,
                                      help = 'Run the build at a lower priority')

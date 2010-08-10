@@ -377,6 +377,10 @@ def clone(module, user, path=None, branch=None, bare_dir=None):
         log.debug('Cloning %s' % giturl)
         cmd.extend([giturl])
     _run_command(cmd)
+
+    # Set push.default to "tracking"
+    repo = git.Repo(module)
+    repo.git.config('--add', 'push.default', 'tracking')
     return
 
 def clone_with_dirs(module, user, path=None):

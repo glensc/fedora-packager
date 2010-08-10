@@ -77,7 +77,7 @@ def _hash_file(file, hashtype):
     input.close()
     return sum.hexdigest()
 
-def _run_command(cmd, shell=False, env=None):
+def _run_command(cmd, shell=False, env=None, pipe=[]):
     """Run the given command.
 
     Will determine if caller is on a real tty and if so stream to the tty
@@ -103,28 +103,55 @@ def _run_command(cmd, shell=False, env=None):
     # Check if we're supposed to be on a shell.  If so, the command must
     # be a string, and not a list.
     command = cmd
+    pipecmd = pipe
     if shell:
         command = ' '.join(cmd)
+        pipecmd = ' '.join(pipe)
     # Check to see if we're on a real tty, if so, stream it baby!
     if sys.stdout.isatty():
-        log.debug('Running %s directly on the tty' %
-                  subprocess.list2cmdline(cmd))
+        if pipe:
+            log.debug('Running %s | %s directly on the tty' %
+                      (subprocess.list2cmdline(cmd),
+                      subprocess.list2cmdline(pipe)))
+        else:
+            log.debug('Running %s directly on the tty' %
+                      subprocess.list2cmdline(cmd))
         try:
-            subprocess.check_call(command, env=environ, stdout=sys.stdout,
-                                  stderr=sys.stderr, shell=shell)
+            if pipe:
+                proc = subprocess.Popen(command, env=environ,
+                                        stdout=subprocess.PIPE,
+                                        stderr=sys.stderr, shell=shell)
+                subprocess.check_call(pipecmd, env=environ,
+                                      stdout=sys.stdout,
+                                      stderr=sys.stderr,
+                                      stdin=proc.stdout,
+                                      shell=shell)
+            else:
+                subprocess.check_call(command, env=environ, stdout=sys.stdout,
+                                      stderr=sys.stderr, shell=shell)
         except subprocess.CalledProcessError, e:
             raise FedpkgError(e)
         except KeyboardInterrupt:
             raise FedpkgError()
     else:
         # Ok, we're not on a live tty, so pipe and log.
-        log.debug('Running %s and logging output' %
-                  subprocess.list2cmdline(cmd))
+        if pipe:
+            log.debug('Running %s | %s and logging output' %
+                      (subprocess.list2cmdline(cmd),
+                       subprocess.list2cmdline(pipe)))
+        else:
+            log.debug('Running %s and logging output' %
+                      subprocess.list2cmdline(cmd))
         try:
-            proc = subprocess.Popen(command, env=environ,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, shell=shell)
-            output, error = proc.communicate()
+            if pipe:
+                proc1 = subprocess.Popen(command, env=environ,
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE, shell=shell)
+                proc2 = subprocess.Popen(pipecmd, env=environ,
+                                         stdin=proc1.stdout,
+                                         stdout=subprocess.PIPE,
+                                         stderr=subprocess.PIPE, shell=shell)
+                output, error = proc2.communicate()
         except OSError, e:
             raise FedpkgError(e)
         log.info(output)
@@ -1246,23 +1273,10 @@ class PackageModule:
                         "--define '_binary_filedigest_algorithm %s'" % hashtype])
         cmd.extend(['--target', arch, '-ba',
                     os.path.join(self.path, self.spec)])
+        logfile = '.build-%s-%s.log' % (self.ver, self.rel)
         # Run the command
-        log.debug('Running: %s' % ' '.join(cmd))
-        try:
-            proc = subprocess.Popen(' '.join(cmd), stderr=subprocess.PIPE,
-                                    stdout=subprocess.PIPE, shell=True)
-            output, error = proc.communicate()
-        except OSError, e:
-            raise FedpkgError(e)
-        outfile = open(os.path.join(self.path, '.build-%s-%s.log' % (self.ver,
-                       self.rel)), 'w')
-        outfile.writelines(output)
-        log.info(output)
-        if error:
-            outfile.writelines(error)
-            log.error(error)
-        outfile.close()
-        return proc.returncode
+        _run_command(cmd, shell=True, pipe=['tee', logfile])
+        return
 
     def mockbuild(self, mockargs=[]):
         """Build the package in mock, using mockargs

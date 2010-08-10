@@ -1371,7 +1371,7 @@ class PackageModule:
 
         optionally for a specific arch
 
-        Logs the output and returns the returncode from the prep call
+        Logs the output and returns nothing
 
         """
 
@@ -1383,18 +1383,9 @@ class PackageModule:
         if arch:
             cmd.extend(['--target', arch])
         cmd.extend(['--nodeps', '-bp', os.path.join(self.path, self.spec)])
-        # Run the command and capture output
-        log.debug('Running: %s' % ' '.join(cmd))
-        try:
-            proc = subprocess.Popen(' '.join(cmd), stderr=subprocess.PIPE,
-                                    stdout=subprocess.PIPE, shell=True)
-            output, error = proc.communicate()
-        except OSError, e:
-            raise FedpkgError(e)
-        log.info(output)
-        if error:
-            log.error(error)
-        return proc.returncode
+        # Run the command
+        _run_command(cmd, shell=True)
+        return
 
     def push(self):
         """Push changes to the main repository"""

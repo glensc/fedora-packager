@@ -675,7 +675,10 @@ class Lookaside(object):
         curl.setopt(pycurl.WRITEFUNCTION, buf.write)
         curl.setopt(pycurl.HTTPPOST, post_data)
 
-        curl.perform()
+        try:
+            curl.perform()
+        except:
+            raise FedpkgError('Lookaside failure.  Check your cert.')
         curl.close()
         output = buf.getvalue().strip()
 
@@ -707,7 +710,10 @@ class Lookaside(object):
 
         # TODO: disabled until safe way to test is known. Watchout for the
         # file parameter:
-        curl.perform()
+        try:
+            curl.perform()
+        except:
+            raise FedpkgError('Lookaside failure.  Check your cert.')
         curl.close()
 
 

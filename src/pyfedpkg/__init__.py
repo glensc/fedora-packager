@@ -1346,6 +1346,7 @@ class PackageModule:
         gitignore = GitIgnore(os.path.join(self.path, '.gitignore'))
 
         lookaside = Lookaside()
+        uploaded = []
         for f in files:
             # TODO: Skip empty file needed?
             file_hash = _hash_file(f, self.lookasidehash)
@@ -1375,6 +1376,7 @@ class PackageModule:
                        'name=%s' % self.module, '-F', 'md5sum=%s' % file_hash,
                        '-F', 'file=@%s' % f, LOOKASIDE_CGI]
                 _run_command(cmd)
+                uploaded.append(file_basename)
 
         sources_file.close()
 
@@ -1386,6 +1388,8 @@ class PackageModule:
         # Change back to original working dir:
         os.chdir(oldpath)
 
+        # Log some info
+        log.info('Uploaded and added to .gitignore: %s' % ' '.join(uploaded))
         return
 
     def prep(self, arch=None):

@@ -578,6 +578,10 @@ def switch_branch(branch, path=os.getcwd()):
     except git.errors.InvalidGitRepositoryError:
         raise FedpkgError('%s is not a valid repo' % path)
 
+    # See if the repo is dirty first
+    if repo.is_dirty():
+        raise FedpkgError('%s has uncommitted changes.' % path)
+
     # Get our list of branches
     (locals, remotes) = _list_branches(repo=repo)
 

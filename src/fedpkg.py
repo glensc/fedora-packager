@@ -617,8 +617,13 @@ def switch_branch(args):
         except pyfedpkg.FedpkgError, e:
             log.error('Unable to list branches: %s' % e)
             sys.exit(1)
-        print('Locals:\n  %s\nRemotes:\n  %s' %
-              ('\n  '.join(locals), '\n  '.join(remotes)))
+        # This is some ugly stuff here, but trying to emulate
+        # the way git branch looks
+        locals = ['  %s  ' % branch for branch in locals]
+        local_branch = pyfedpkg._find_branch(args.path)
+        locals[locals.index('  %s  ' % local_branch)] = '* %s' % local_branch
+        print('Locals:\n%s\nRemotes:\n  %s' %
+              ('\n'.join(locals), '\n  '.join(remotes)))
 
 def tagrequest(args):
     # not implimented

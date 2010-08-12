@@ -57,6 +57,17 @@ log = logging.getLogger("fedpkg")
 # Add the null handler
 log.addHandler(h)
 
+def _find_branch(path=os.getcwd(), repo=None):
+    """Returns the active branch name"""
+
+    # Create the repo from path if no repo passed
+    if not repo:
+        try:
+            repo = git.Repo(path)
+        except:
+            raise FedpkgError('Invalid repo %s' % path)
+    return(repo.active_branch.name)
+
 # Define some helper functions, they start with _
 def _hash_file(file, hashtype):
     """Return the hash of a file given a hash type"""

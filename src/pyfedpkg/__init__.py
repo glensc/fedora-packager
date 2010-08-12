@@ -994,8 +994,11 @@ class PackageModule:
             # pushed or not
             branch = self.repo.active_branch
             remote = self.repo.git.config('--get',
-                'branch.%s.merge' % branch).replace('refs/heads', 'origin')
-            if self.repo.git.rev_list('%s...%s' % (branch, remote)):
+                'branch.%s.remote' % branch)
+
+            merge = self.repo.git.config('--get',
+                'branch.%s.merge' % branch).replace('refs/heads', remote)
+            if self.repo.git.rev_list('%s...%s' % (branch, merge)):
                 raise FedpkgError('There are unpushed changes in your repo')
             # Get the commit hash to build
             commit = self.repo.iter_commits().next().sha

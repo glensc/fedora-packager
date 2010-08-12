@@ -823,7 +823,7 @@ class PackageModule:
             self.mockconfig = 'fedora-%s-%s' % (self.distval, self.localarch)
         elif self.branch.startswith('el'):
             self.distval = self.branch.split('el')[1]
-            self.distvar = 'epel'
+            self.distvar = 'rhel'
             self.dist = 'el%s' % self.distval
             self.target = 'dist-%sE-epel-testing-candidate' % self.distval
             self.mockconfig = 'epel-%s-%s' % (self.distval, self.localarch)

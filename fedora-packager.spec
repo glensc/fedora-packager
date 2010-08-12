@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.1.0
+Version:        0.5.1.2
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -55,6 +55,10 @@ rm -rf $RPM_BUILD_ROOT
 %{python_sitelib}/fedora_cert
 
 %changelog
+* Thu Aug 12 2010 Dennis Gilmore <dennis@asuil.us> - 0.5.1.2-1
+- fix rh bz 619733 619879 619935 620254 620465 620595 620648
+- 620653 620750 621148 621808 622291 622716
+
 * Thu Jul 29 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.1.0-1
 - wrap fedora-cert in try except 
 -fedpkg fixes

@@ -539,7 +539,10 @@ def sources(path, outdir=None):
     if not outdir:
         outdir = path
     for archive in archives:
-        csum, file = archive.split()
+        try:
+            csum, file = archive.split()
+        except ValueError:
+            raise FedpkgError('Malformed sources file.')
         # See if we already have a valid copy downloaded
         outfile = os.path.join(outdir, file)
         if os.path.exists(outfile):

@@ -282,7 +282,7 @@ def clean(dry=False, useignore=True):
 
     Can optionally not use the ignore rules
 
-    Logs output and returns the returncode
+    Logs output and returns nothing
 
     """
 
@@ -293,17 +293,8 @@ def clean(dry=False, useignore=True):
     if not useignore:
         cmd.append('-x')
     # Run it!
-    log.debug('Running: %s' % subprocess.list2cmdline(cmd))
-    try:
-        proc = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE)
-        output, error = proc.communicate()
-    except OSError, e:
-        raise FedpkgError(e)
-    log.info(output)
-    if error:
-        log.error(error)
-    return proc.returncode
+    _run_command(cmd)
+    return
 
 def clone(module, user, path=os.getcwd(), branch=None, bare_dir=None):
     """Clone a repo, optionally check out a specific branch.

@@ -760,7 +760,10 @@ class PackageModule:
     def _findbranch(self):
         """Find the branch we're on"""
 
-        localbranch = self.repo.active_branch.name
+        try:
+            localbranch = self.repo.active_branch.name
+        except TypeError, e:
+            raise FedpkgError('Repo in inconsistent state: %s' % e)
         merge = self.repo.git.config('--get', 'branch.%s.merge' % localbranch)
         return(merge.split('/')[2])
 

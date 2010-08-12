@@ -850,6 +850,11 @@ packages will be built sequentially.
                                help = 'Optional list of specific files to commit')
     parser_commit.set_defaults(command = commit)
 
+    parser_ci = subparsers.add_parser('ci', parents = [parser_commit],
+                                      conflict_handler = 'resolve',
+                                      help = 'Alias for commit')
+    parser_ci.set_defaults(command = commit)
+
     # compile locally
     parser_compile = subparsers.add_parser('compile',
                                         help = 'Local test rpmbuild compile')

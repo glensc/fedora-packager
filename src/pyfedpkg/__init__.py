@@ -850,8 +850,11 @@ class PackageModule:
                            "--define 'dist .%s'" % self.dist,
                            "--define '%s 1'" % self.dist,
                            "--define '%s 1'" % self.distvar]
-        self.ver = self.getver()
-        self.rel = self.getrel()
+        try:
+            self.ver = self.getver()
+            self.rel = self.getrel()
+        except IndexError:
+            raise FedpkgError('Could not parse spec file.')
         self.nvr = '%s-%s-%s' % (self.module, self.ver, self.rel)
         # Define the hashtype to use for srpms
         # Default to sha256 hash type

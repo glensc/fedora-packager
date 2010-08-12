@@ -140,7 +140,8 @@ def _run_command(cmd, shell=False, env=None, pipe=[]):
             else:
                 subprocess.check_call(command, env=environ, stdout=sys.stdout,
                                       stderr=sys.stderr, shell=shell)
-        except subprocess.CalledProcessError, e:
+        except (subprocess.CalledProcessError,
+                OSError), e:
             raise FedpkgError(e)
         except KeyboardInterrupt:
             raise FedpkgError()

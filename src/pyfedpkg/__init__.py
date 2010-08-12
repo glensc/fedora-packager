@@ -1292,8 +1292,11 @@ class PackageModule:
         srpm = os.path.join(self.path,
                             "%s-%s-%s.src.rpm" % (self.module,
                                                   self.ver, self.rel))
+        # See if we need to build the srpm
         if not os.path.exists(srpm):
-            raise FedpkgError('Need to build srpm first')
+            # This should figure out the hashtype to use
+            log.debug('No srpm found, building one.')
+            self.srpm()
 
         # setup the command
         cmd = ['mock']

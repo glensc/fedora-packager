@@ -64,8 +64,8 @@ def _find_branch(path=os.getcwd(), repo=None):
     if not repo:
         try:
             repo = git.Repo(path)
-        except:
-            raise FedpkgError('Invalid repo %s' % path)
+        except git.errors.InvalidGitRepositoryError:
+            raise FedpkgError('%s is not a valid repo' % path)
     return(repo.active_branch.name)
 
 # Define some helper functions, they start with _
@@ -227,7 +227,10 @@ def _list_branches(path=os.getcwd(), repo=None):
 
     # Create the repo from path if no repo passed
     if not repo:
-        repo = git.Repo(path)
+        try:
+            repo = git.Repo(path)
+        except git.errors.InvalidGitRepositoryError:
+            raise FedpkgError('%s is not a valid repo' % path)
     log.debug('Listing refs')
     refs = repo.refs
     # Sort into local and remote branches
@@ -446,7 +449,10 @@ def import_srpm(srpm, path=os.getcwd()):
     if not os.path.exists(srpm):
         raise FedpkgError('File not found.')
     # bail if we're dirty
-    repo = git.Repo(path)
+    try:
+        repo = git.Repo(path)
+    except git.errors.InvalidGitRepositoryError:
+        raise FedpkgError('%s is not a valid repo' % path)
     if repo.is_dirty():
         raise FedpkgError('There are uncommitted changes in your repo')
     # Get the details of the srpm

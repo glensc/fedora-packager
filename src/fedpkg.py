@@ -320,8 +320,12 @@ def build(args):
             print('')
         url = '%s/%s' % (uniquepath, os.path.basename(args.srpm))
     # Should also try this, again not sure what errors to catch
-    task_id = mymodule.build(args.skip_tag, args.scratch, args.background,
-                             url, chain)
+    try:
+        task_id = mymodule.build(args.skip_tag, args.scratch, args.background,
+                                 url, chain)
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not initiate build: %s' % e)
+        sys.exit(1)
     # Now that we have the task ID we need to deal with it.
     if args.nowait:
         # Log out of the koji session

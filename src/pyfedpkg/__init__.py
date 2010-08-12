@@ -1112,6 +1112,14 @@ class PackageModule:
                 return f
         raise FedpkgError('No spec file found.')
 
+    def giturl(self):
+        """Return the git url that would be used for building"""
+
+        # Get the commit hash
+        commit = self.repo.iter_commits().next().sha
+        url = ANONGITURL % {'module': self.module} + '?#%s' % commit
+        return url
+
     def koji_upload(self, file, path, callback=None):
         """Upload a file to koji
 

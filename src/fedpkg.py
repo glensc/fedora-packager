@@ -460,6 +460,14 @@ def gimmespec(args):
         log.error('Could not get spec file: %s' % e)
         sys.exit(1)
 
+def giturl(args):
+    try:
+        mymodule = pyfedpkg.PackageModule(args.path)
+        print(mymodule.giturl())
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not get the giturl: %s' % e)
+        sys.exit(1)
+
 def import_srpm(args):
     # See if we need to create a module from scratch, and do so
     if args.create:
@@ -870,6 +878,11 @@ packages will be built sequentially.
     parser_gimmespec = subparsers.add_parser('gimmespec',
                                              help = 'print spec file name')
     parser_gimmespec.set_defaults(command = gimmespec)
+
+    # giturl
+    parser_giturl = subparsers.add_parser('giturl',
+                                          help = 'print the url for building')
+    parser_giturl.set_defaults(command = giturl)
 
     # Import content into a module
     parser_import_srpm = subparsers.add_parser('import',

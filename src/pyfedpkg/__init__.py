@@ -1350,7 +1350,7 @@ class PackageModule:
                 sources_file.write("%s  %s\n" % (file_hash, file_basename))
 
             # Add this file to .gitignore if it's not already there:
-            gitignore.add(file_basename)
+            gitignore.add('/%s' % file_basename)
 
             if lookaside.file_exists(self.module, file_basename, file_hash):
                 # Already uploaded, skip it:

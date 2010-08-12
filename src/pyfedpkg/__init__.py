@@ -852,6 +852,11 @@ class PackageModule:
         self.ver = self.getver()
         self.rel = self.getrel()
         self.nvr = '%s-%s-%s' % (self.module, self.ver, self.rel)
+        # Define the hashtype to use for srpms
+        # Default to sha256 hash type
+        self.hashtype = 'sha256'
+        if self.branch.startswith('el5') or self.branch.startswith('el4'):
+            self.hashtype = 'md5'
 
     def build(self, skip_tag=False, scratch=False, background=False,
               url=None, chain=None):
@@ -1411,7 +1416,7 @@ class PackageModule:
         _run_command(cmd)
         return
 
-    def srpm(self, hashtype='sha256'):
+    def srpm(self, hashtype=None):
         """Create an srpm using hashtype from content in the module
     
         Requires sources already downloaded.
@@ -1420,6 +1425,9 @@ class PackageModule:
 
         cmd = ['rpmbuild']
         cmd.extend(self.rpmdefines)
+        # Figure out which hashtype to use, if not provided one
+        if not hashtype:
+            hashtype = self.hashtype
         # This may need to get updated if we ever change our checksum default
         if not hashtype == 'sha256':
             cmd.extend(["--define '_source_filedigest_algorithm %s'" % hashtype,

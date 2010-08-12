@@ -838,7 +838,7 @@ class PackageModule:
             self.distval = self._findmasterbranch()
             self.distvar = 'fedora'
             self.distshort = 'fc%s' % self.distval
-            self.dist = '.fc%s' % self.distval
+            self.dist = 'fc%s' % self.distval
             self.target = 'dist-rawhide'
             self.mockconfig = 'fedora-devel-%s' % self.localarch
         self.rpmdefines = ["--define '_sourcedir %s'" % path,

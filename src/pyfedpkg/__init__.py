@@ -1216,7 +1216,7 @@ class PackageModule:
         try:
             self.kojisession.ssl_login(defaults['cert'], defaults['ca'],
                                        defaults['serverca'])
-        except OpenSSL.SSL.Error:
+        except:
             raise FedpkgError('Opening a SSL connection failed')
         if not self.kojisession.logged_in:
             raise FedpkgError('Could not auth with koji as %s' % user)

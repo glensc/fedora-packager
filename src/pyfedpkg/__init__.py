@@ -57,8 +57,11 @@ log = logging.getLogger("fedpkg")
 # Add the null handler
 log.addHandler(h)
 
-def _find_branch(path=os.getcwd(), repo=None):
+def _find_branch(path=None, repo=None):
     """Returns the active branch name"""
+
+    if not path:
+        path = os.getcwd()
 
     # Create the repo from path if no repo passed
     if not repo:
@@ -227,9 +230,11 @@ def _get_build_arches_from_srpm(srpm, arches):
         raise FedpkgError('No compatible build arches found in %s' % srpm)
     return archlist
 
-def _list_branches(path=os.getcwd(), repo=None):
+def _list_branches(path=None, repo=None):
     """Returns a tuple of local and remote branch names"""
 
+    if not path:
+        path = os.getcwd()
     # Create the repo from path if no repo passed
     if not repo:
         try:
@@ -316,7 +321,7 @@ def clean(dry=False, useignore=True):
     _run_command(cmd)
     return
 
-def clone(module, user, path=os.getcwd(), branch=None, bare_dir=None):
+def clone(module, user, path=None, branch=None, bare_dir=None):
     """Clone a repo, optionally check out a specific branch.
 
     module is the name of the module to clone
@@ -332,6 +337,8 @@ def clone(module, user, path=os.getcwd(), branch=None, bare_dir=None):
 
     """
 
+    if not path:
+        path = os.getcwd()
     # construct the git url
     if user:
         giturl = GITBASEURL % {'user': user, 'module': module}
@@ -362,7 +369,7 @@ def clone(module, user, path=os.getcwd(), branch=None, bare_dir=None):
     _run_command(cmd)
     return
 
-def clone_with_dirs(module, user, path=os.getcwd()):
+def clone_with_dirs(module, user, path=None):
     """Clone a repo old style with subdirs for each branch.
 
     module is the name of the module to clone
@@ -371,6 +378,8 @@ def clone_with_dirs(module, user, path=os.getcwd()):
 
     """
 
+    if not path:
+        path = os.getcwd()
     # Get the full path of, and git object for, our directory of branches
     top_path = os.path.join(path, module)
     top_git = git.Git(top_path)
@@ -434,7 +443,7 @@ def get_latest_commit(module):
     # Return the hash sum
     return output.split()[0]
 
-def import_srpm(srpm, path=os.getcwd()):
+def import_srpm(srpm, path=None):
     """Import the contents of an srpm into a repo.
 
     srpm: File to import contents from
@@ -449,6 +458,8 @@ def import_srpm(srpm, path=os.getcwd()):
 
     """
 
+    if not path:
+        path = os.getcwd()
     # see if the srpm even exists
     srpm = os.path.abspath(srpm)
     if not os.path.exists(srpm):
@@ -515,9 +526,11 @@ def import_srpm(srpm, path=os.getcwd()):
     os.chdir(oldpath)
     return(uploadfiles)
 
-def new(path=os.getcwd()):
+def new(path=None):
     """Return changes in a repo since the last tag"""
 
+    if not path:
+        path = os.getcwd()
     # setup the repo object based on our path
     try:
         repo = git.Repo(path)
@@ -589,7 +602,7 @@ def sources(path, outdir=None):
             raise FedpkgError('%s failed checksum' % file)
     return
 
-def switch_branch(branch, path=os.getcwd()):
+def switch_branch(branch, path=None):
     """Switch the working branch
 
     Will create a local branch if one doesn't already exist,
@@ -597,6 +610,9 @@ def switch_branch(branch, path=os.getcwd()):
 
     Logs output and returns nothing.
     """
+
+    if not path:
+        path = os.getcwd()
 
     # setup the repo object based on our path
     try:
@@ -817,9 +833,11 @@ class PackageModule:
         return subprocess.Popen(['rpm --eval %{_arch}'], shell=True,
                         stdout=subprocess.PIPE).communicate()[0].strip('\n')
 
-    def __init__(self, path=os.getcwd()):
+    def __init__(self, path=None):
         # Initiate a PackageModule object in a given path
         # Set some global variables used throughout
+        if not path:
+            path = os.getcwd()
         log.debug('Creating module object from %s' % path)
         self.path = path
         self.lookaside = LOOKASIDE

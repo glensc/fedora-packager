@@ -164,6 +164,11 @@ def _run_command(cmd, shell=False, env=None, pipe=[]):
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, shell=shell)
                 output, error = proc2.communicate()
+            else:
+                proc = subprocess.Popen(command, env=environ,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE, shell=shell)
+                output, error = proc.communicate()
         except OSError, e:
             raise FedpkgError(e)
         log.info(output)

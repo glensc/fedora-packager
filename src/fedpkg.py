@@ -344,29 +344,38 @@ def chainbuild(args):
     if mymodule.module in args.package:
         log.error('%s must not be in the chain' % mymodule.module)
         sys.exit(1)
+    # make sure we didn't get an empty chain
+    if args.package == [':']:
+        log.error('Must provide at least one dependency build')
+        sys.exit(1)
     # Break the chain up into sections
     urls = []
     build_set = []
     log.debug('Processing chain %s' % ' '.join(args.package))
     for component in args.package:
         if component == ':':
-            if build_set:
-                # We've hit the end of a set, add the set as a unit to the
-                # url list and reset the build_set.
-                urls.append(build_set)
-                log.debug('Created a build set: %s' % ' '.join(build_set))
-                build_set = []
+            # We've hit the end of a set, add the set as a unit to the
+            # url list and reset the build_set.
+            urls.append(build_set)
+            log.debug('Created a build set: %s' % ' '.join(build_set))
+            build_set = []
         else:
             # Figure out the scm url to build from package name
             try:
                 hash = pyfedpkg.get_latest_commit(component)
                 url = pyfedpkg.ANONGITURL % {'module':
                                              component} + '#%s' % hash
-                build_set.append(url)
             except pyfedpkg.FedpkgError, e:
                 log.error('Could not get a build url for %s: %s'
                           % (component, e))
                 sys.exit(1)
+            # If there are no ':' in the chain list, treat each object as an
+            # individual chain
+            if ':' in args.package:
+                build_set.append(url)
+            else:
+                urls.append([url])
+                log.debug('Created a build set: %s' % url)
     # Take care of the last build set if we have one
     if build_set:
         log.debug('Created a build set: %s' % ' '.join(build_set))

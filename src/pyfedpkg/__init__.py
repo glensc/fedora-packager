@@ -967,10 +967,12 @@ class PackageModule:
         # Handle the chain build version
         if chain:
             log.debug('Adding %s to the chain' % url)
-            chain[-1].append(url)
-            cmd.append(url)
+            chain.append([url])
+            # This next list comp is ugly, but it's how we properly get a :
+            # put in between each build set
+            cmd.extend(' : '.join([' '.join(sets) for sets in chain]).split())
             log.info('Chain building %s + %s for %s' % (self.nvr,
-                                                        chain,
+                                                        chain[:-1],
                                                         self.target))
             log.debug('Building chain %s for %s with options %s and a ' \
                       'priority of %s' %

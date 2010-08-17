@@ -1068,4 +1068,7 @@ packages will be built sequentially.
     log.addHandler(streamhandler)
 
     # Run the necessary command
-    args.command(args)
+    try:
+        args.command(args)
+    except KeyboardInterrupt:
+        pass

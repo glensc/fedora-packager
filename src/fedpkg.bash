@@ -35,7 +35,7 @@ _fedpkg()
                  $( compgen -W '$( command ls *.src.rpm 2>/dev/null )' \
                  -- "$cur" ) )
                  return 0;
-                ;;                                                       
+                ;;
              -*)
                 return 0;
                 ;;

@@ -8,10 +8,10 @@ _fedpkg()
     COMPREPLY=()
     _get_comp_words_by_ref cur prev
 
-    commands='help build chain-build clean clog clone co commit compile diff \
-    gimmespec import install lint local mockbuild new new-sources patch prep \
-    push scratch-build sources srpm switch-branch tag-request unused-patches \
-    specfile update upload verrel'
+    commands='help build chain-build clean clog clone co commit ci compile \
+    diff gimmespec giturl import install lint local mockbuild new new-sources \
+    patch prep push scratch-build sources srpm switch-branch tag-request \
+    unused-patches update upload verrel'
 
     if [[ $COMP_CWORD -eq 1 ]] ; then
         if [[ "$cur" == -* ]]; then
@@ -27,7 +27,7 @@ _fedpkg()
                 return 0;
                 ;;
             --arch|--arches)
-                COMPREPLY=( $( compgen -W 'i386 x86_64' -- "$cur" ) )
+                COMPREPLY=( $( compgen -W 'i386 i586 i686 x86_64' -- "$cur" ) )
                 return 0;
                 ;;
              --srpm)
@@ -58,7 +58,7 @@ _fedpkg()
                 clone|co)
                     options='--branches -B --branch -b --anonymous -a'
                     ;;
-                commit)
+                commit|ci)
                     options='-m --message -F --file -p --push'
                     ;;
                 compile)
@@ -91,7 +91,7 @@ _fedpkg()
                 switch-branch)
                     options='-l'
                     ;;
-                clog|gimmespec|lint|mockbuild|new|push|tag-request|\
+                clog|gimmespec|lint|mockbuild|new|giturl|push|tag-request|\
                 unused-patches|update|verrel)
                     options='-h'
                     ;;
@@ -110,9 +110,9 @@ _fedpkg()
                         -- "$cur" ) )
                     ;;
                 # no further args required
-                help|build|clean|clog|compile|gimmespec|install|lint|local|\
-                mockbuild|new|patch|prep|push|scratch-build|sources|srpm|\
-                switch-branch|tag-request|unused-patches|update|verrel)
+                help|build|clean|clog|compile|gimmespec|giturl|install|lint|\
+                local|mockbuild|new|patch|prep|push|scratch-build|sources|\
+                srpm|switch-branch|tag-request|unused-patches|update|verrel)
                     ;;
                 *)
                     _filedir

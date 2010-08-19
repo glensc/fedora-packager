@@ -692,16 +692,23 @@ def update(args):
     # Suggest that users restart after update
     suggest_reboot=False\
     """
-    args = {'nvr': nvr, 'bugs': ''}
+    if not args.user:
+        try:
+            args.user = fedora_cert.read_user_cert()
+        except:
+            log.debug('Could not read Fedora cert, using login name')
+            args.user = os.getlogin()
+
+    bodhi_args = {'nvr': nvr, 'bugs': ''}
 
     # Extract bug numbers from the latest changelog entry
     mymodule.clog()
     clog = file('clog').read()
     bugs = re.findall(r'#([0-9]*)', clog)
     if bugs:
-        args['bugs'] = ','.join(bugs)
+        bodhi_args['bugs'] = ','.join(bugs)
 
-    template = textwrap.dedent(template) % args
+    template = textwrap.dedent(template) % bodhi_args
 
     # Calculate the hash of the unaltered template
     orig_hash = hashlib.new('sha1')
@@ -721,8 +728,7 @@ def update(args):
     hash = pyfedpkg._hash_file('bodhi.template', 'sha1')
     if hash != orig_hash:
         cmd = ['bodhi', '--new', '--release', mymodule.branch, '--file',
-               'bodhi.template', nvr, '--username',
-               os.getenv('BODHI_USER', os.getenv('USER'))]
+               'bodhi.template', nvr, '--username', args.user]
         pyfedpkg._run_command(cmd, shell=True)
     else:
         log.info('Bodhi update aborted!')

@@ -748,7 +748,9 @@ def verrel(args):
 # THe main code goes here
 if __name__ == '__main__':
     # Create the parser object
-    parser = argparse.ArgumentParser(description = 'Fedora Packaging utility')
+    parser = argparse.ArgumentParser(description = 'Fedora Packaging utility',
+                                     epilog = "For detailed help pass " \
+                                               "--help to a target")
 
     # Add top level arguments
     # Let somebody override the username found in fedora cert

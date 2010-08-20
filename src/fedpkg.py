@@ -749,6 +749,7 @@ def verrel(args):
 if __name__ == '__main__':
     # Create the parser object
     parser = argparse.ArgumentParser(description = 'Fedora Packaging utility',
+                                     prog = 'fedpkg',
                                      epilog = "For detailed help pass " \
                                                "--help to a target")
 

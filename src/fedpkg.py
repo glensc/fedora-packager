@@ -796,6 +796,8 @@ if __name__ == '__main__':
     parser_build.add_argument('--scratch', action = 'store_true',
                               default = False,
                               help = 'Perform a scratch build')
+    parser_build.add_argument('--srpm',
+                              help = 'Build from an srpm.  Requires --scratch')
     parser_build.set_defaults(command = build)
 
     # chain build

@@ -453,11 +453,6 @@ def commit(path=None, message=None, file=None, files=[]):
         if not message or not file:
             raise FedpkgError('Must have a commit message or be on a real tty.')
 
-    # Deal with path
-    curdir = os.getcwd()
-    if path:
-        os.chdir(path)
-
     # construct the git command
     # We do this via subprocess because the git module is terrible.
     cmd = ['git', 'commit']
@@ -470,8 +465,7 @@ def commit(path=None, message=None, file=None, files=[]):
     else:
         cmd.extend(files)
     # make it so
-    _run_command(cmd)
-    os.chdir(curdir)
+    _run_command(cmd, cwd=path)
     return
 
 def get_latest_commit(module):

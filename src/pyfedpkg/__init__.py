@@ -423,6 +423,47 @@ def clone_with_dirs(module, user, path=None):
     # successful.
     return 0
 
+def commit(path=None, message=None, file=None, files=[]):
+    """Commit changes to a module (optionally found at path)
+
+    Can take a message to use as the commit message
+
+    a file to find the commit message within
+
+    and a list of files to commit.
+
+    Requires the caller be a real tty or a message passed.
+
+    Logs the output and returns nothing.
+
+    """
+
+    # First lets see if we got a message or we're on a real tty:
+    if not sys.stdin.isatty():
+        if not message or not file:
+            raise FedpkgError('Must have a commit message or be on a real tty.')
+
+    # Deal with path
+    curdir = os.getcwd()
+    if path:
+        os.chdir(path)
+
+    # construct the git command
+    # We do this via subprocess because the git module is terrible.
+    cmd = ['git', 'commit']
+    if message:
+        cmd.extend(['-m', message])
+    elif file:
+        cmd.extend(['-F', os.path.abspath(file)])
+    if not files:
+        cmd.append('-a')
+    else:
+        cmd.extend(files)
+    # make it so
+    _run_command(cmd)
+    os.chdir(curdir)
+    return
+
 def get_latest_commit(module):
     """Discover the latest commit has for a given module and return it"""
 
@@ -1039,41 +1080,6 @@ class PackageModule:
         # Now open the clog file and write out the lines
         clogfile = open(os.path.join(self.path, 'clog'), 'w')
         clogfile.writelines(cloglines)
-        return
-
-    def commit(self, message=None, file=None, files=[]):
-        """Commit changes to a module.
-
-        Can take a message to use as the commit message
-
-        a file to find the commit message within
-
-        and a list of files to commit.
-
-        Requires the caller be a real tty or a message passed.
-
-        Logs the output and returns nothing.
-
-        """
-
-        # First lets see if we got a message or we're on a real tty:
-        if not sys.stdin.isatty():
-            if not message or not file:
-                raise FedpkgError('Must have a commit message or be on a real tty.')
-
-        # construct the git command
-        # We do this via subprocess because the git module is terrible.
-        cmd = ['git', 'commit']
-        if message:
-            cmd.extend(['-m', message])
-        elif file:
-            cmd.extend(['-F', os.path.abspath(file)])
-        if not files:
-            cmd.append('-a')
-        else:
-            cmd.extend(files)
-        # make it so
-        _run_command(cmd)
         return
 
     def compile(self, arch=None, short=False):

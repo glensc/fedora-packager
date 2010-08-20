@@ -431,8 +431,7 @@ def clone(args):
 
 def commit(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
-        mymodule.commit(args.message, args.file, args.files)
+        pyfedpkg.commit(args.path, args.message, args.file, args.files)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not commit: %s' % e)
         sys.exit(1)

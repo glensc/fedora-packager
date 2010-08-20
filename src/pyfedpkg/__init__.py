@@ -104,6 +104,8 @@ def _run_command(cmd, shell=False, env=None, pipe=[]):
 
     env is a dict of environment variables to use (if any)
 
+    pipe is a command to pipe the output of cmd into
+
     Raises on error, or returns nothing.
 
     """

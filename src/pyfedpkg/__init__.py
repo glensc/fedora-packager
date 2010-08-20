@@ -459,7 +459,11 @@ def commit(path=None, message=None, file=None, files=[]):
     if message:
         cmd.extend(['-m', message])
     elif file:
-        cmd.extend(['-F', os.path.abspath(file)])
+        # If we get a relative file name, prepend our path to it.
+        if path and not file.startswith('/'):
+            cmd.extend(['-F', os.path.abspath(os.path.join(path, file))])
+        else:
+            cmd.extend(['-F', os.path.abspath(file)])
     if not files:
         cmd.append('-a')
     else:

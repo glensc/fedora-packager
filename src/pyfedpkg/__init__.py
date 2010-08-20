@@ -91,7 +91,7 @@ def _hash_file(file, hashtype):
     input.close()
     return sum.hexdigest()
 
-def _run_command(cmd, shell=False, env=None, pipe=[]):
+def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
     """Run the given command.
 
     Will determine if caller is on a real tty and if so stream to the tty
@@ -105,6 +105,8 @@ def _run_command(cmd, shell=False, env=None, pipe=[]):
     env is a dict of environment variables to use (if any)
 
     pipe is a command to pipe the output of cmd into
+
+    cwd is the optional directory to run the command from
 
     Raises on error, or returns nothing.
 
@@ -136,15 +138,18 @@ def _run_command(cmd, shell=False, env=None, pipe=[]):
             if pipe:
                 proc = subprocess.Popen(command, env=environ,
                                         stdout=subprocess.PIPE,
-                                        stderr=sys.stderr, shell=shell)
+                                        stderr=sys.stderr, shell=shell,
+                                        cwd=cwd)
                 subprocess.check_call(pipecmd, env=environ,
                                       stdout=sys.stdout,
                                       stderr=sys.stderr,
                                       stdin=proc.stdout,
-                                      shell=shell)
+                                      shell=shell,
+                                      cwd=cwd)
             else:
                 subprocess.check_call(command, env=environ, stdout=sys.stdout,
-                                      stderr=sys.stderr, shell=shell)
+                                      stderr=sys.stderr, shell=shell,
+                                      cwd=cwd)
         except (subprocess.CalledProcessError,
                 OSError), e:
             raise FedpkgError(e)
@@ -163,16 +168,19 @@ def _run_command(cmd, shell=False, env=None, pipe=[]):
             if pipe:
                 proc1 = subprocess.Popen(command, env=environ,
                                          stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE, shell=shell)
+                                         stderr=subprocess.PIPE, shell=shell,
+                                         cwd=cwd)
                 proc2 = subprocess.Popen(pipecmd, env=environ,
                                          stdin=proc1.stdout,
                                          stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE, shell=shell)
+                                         stderr=subprocess.PIPE, shell=shell,
+                                         cwd=cwd)
                 output, error = proc2.communicate()
             else:
                 proc = subprocess.Popen(command, env=environ,
                                         stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, shell=shell)
+                                        stderr=subprocess.PIPE, shell=shell,
+                                        cwd=cwd)
                 output, error = proc.communicate()
         except OSError, e:
             raise FedpkgError(e)

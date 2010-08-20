@@ -1034,6 +1034,14 @@ class PackageModule:
             priority = 5 # magic koji number :/
 
         cmd.append(self.target)
+        # see if this build has been done.  Does not check builds within
+        # a chain
+        if not scratch:
+            build = self.kojisession.getBuild(self.nvr)
+            if build:
+                if build['state'] == 1:
+                    raise FedpkgError('%s has already been built' %
+                                      self.nvr)
         # Now submit the task and get the task_id to return
         # Handle the chain build version
         if chain:

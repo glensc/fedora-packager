@@ -33,18 +33,12 @@ def main(user, pkg_list):
 if __name__ == '__main__':
     opt_p = optparse.OptionParser(usage="%prog [OPTIONS] module ...")
 
-    opt_p.add_option('-a', '--anonymous', action='store_true', dest='anon',
-                     help="Use anonymous CVS.")
-
     opts, pkgs = opt_p.parse_args()
 
     if len(pkgs) < 1:
         opt_p.error("You must specify at least one module to check out.")
 
     # Determine user name, if any
-    if opts.anon:
-        user = None
-    else:
-        user = fedora_cert.read_user_cert()
+    user = None
 
     main(user, pkgs)

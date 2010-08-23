@@ -942,8 +942,8 @@ class PackageModule:
                            "--define '_srcrpmdir %s'" % path,
                            "--define '_rpmdir %s'" % path,
                            "--define 'dist .%s'" % self.dist,
-                           "--define '%s 1'" % self.dist,
-                           "--define '%s 1'" % self.distvar]
+                           "--define '%s %s'" % (self.distvar, self.distval),
+                           "--define '%s 1'" % self.dist]
         try:
             self.ver = self.getver()
             self.rel = self.getrel()

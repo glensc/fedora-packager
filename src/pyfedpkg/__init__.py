@@ -136,9 +136,12 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
                       subprocess.list2cmdline(cmd))
         try:
             if pipe:
+                # We're piping the stderr over too, which is probably a
+                # bad thing, but rpmbuild likes to put useful data on
+                # stderr, so....
                 proc = subprocess.Popen(command, env=environ,
                                         stdout=subprocess.PIPE,
-                                        stderr=sys.stderr, shell=shell,
+                                        stderr=subprocess.STDOUT, shell=shell,
                                         cwd=cwd)
                 subprocess.check_call(pipecmd, env=environ,
                                       stdout=sys.stdout,

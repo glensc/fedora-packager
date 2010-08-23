@@ -20,7 +20,8 @@ EXTRA_DIST = src/fedora-cvs.py \
 	src/fedora-hosted.py \
 	src/rpmbuild-md5 \
 	src/fedpkg.py \
-	src/secondary-koji
+	src/secondary-koji \
+	src/fedpkg.bash
 
 fedora-cvs: $(srcdir)/src/fedora-cvs.py
 	rm -f fedora-cvs
@@ -75,3 +76,6 @@ fedora_cert_PYTHON = $(wildcard $(srcdir)/src/fedora_cert/*.py)
 
 fedora_certdir = $(pythondir)/fedora_cert
 pyfedpkgdir = $(pythondir)/pyfedpkg
+
+bashconfdir = $(sysconfdir)/bash_completion.d
+bashconf_DATA = $(srcdir)/src/fedpkg.bash

@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.1.3
+Version:        0.5.1.4
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -73,6 +73,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Aug 24 2010 Jesse Keating <jkeating@redhat.com> - 0.5.1.4-1
+- Fix setting push.default when cloning with dirs
+- Remove build --test option in bash completion
+
 * Mon Aug 23 2010 Jesse Keating <jkeating@redhat.com> - 0.5.1.3-1
 - Error check the update call.  #625679
 - Use the correct remote when listing revs

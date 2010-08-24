@@ -54,7 +54,7 @@ _fedpkg()
             # list possible options for the command
             case $command in
                 build)
-                    options='--nowait --background --skip-tag --scratch --test'
+                    options='--nowait --background --skip-tag --scratch'
                     ;;
                 chain-build)
                     options='--nowait --background'

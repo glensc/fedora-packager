@@ -69,6 +69,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_bindir}/fedpkg
 %{python_sitelib}/pyfedpkg
+%{_sysconfdir}/bash_completion.d
 
 
 %changelog

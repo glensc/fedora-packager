@@ -728,7 +728,11 @@ def update(args):
     if hash != orig_hash:
         cmd = ['bodhi', '--new', '--release', mymodule.branch, '--file',
                'bodhi.template', nvr, '--username', args.user]
-        pyfedpkg._run_command(cmd, shell=True)
+        try:
+            pyfedpkg._run_command(cmd, shell=True)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Could not generate update request: %s' % e)
+            sys.exit(1)
     else:
         log.info('Bodhi update aborted!')
 

@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.1.2
+Version:        0.5.1.3
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -73,6 +73,20 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Aug 23 2010 Jesse Keating <jkeating@redhat.com> - 0.5.1.3-1
+- Error check the update call.  #625679
+- Use the correct remote when listing revs
+- Add the bash completion file
+- make fedora-cvs only do anonymous chackouts since cvs is read only now.
+- re-fix dist defines.
+- Short cut the failure on repeated builds
+- Allow passing srpms to the build command
+- clone: set repo's push.default to tracking
+- pull the username from fedora_cert to pass to bodhi
+- Catch double ^c's from build.  RHBZ #620465
+- Fix up chain building
+- Add missing process call for non-pipe no tty.
+
 * Thu Aug 12 2010 Dennis Gilmore <dennis@asuil.us> - 0.5.1.2-1
 - fix rh bz 619733 619879 619935 620254 620465 620595 620648
 - 620653 620750 621148 621808 622291 622716

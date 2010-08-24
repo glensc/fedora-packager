@@ -16,19 +16,29 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  python-devel
 Requires:       koji bodhi-client 
 Requires:       rpm-build rpmdevtools rpmlint
-Requires:       mock cvs curl wget make openssh-clients
+Requires:       mock curl openssh-clients
 Requires:       pyOpenSSL python-pycurl
 Requires:       redhat-rpm-config
 Requires:       python-offtrac
-Requires:       GitPython >= 0.2.0, python-argparse
-%if 0%{?rhel}== 5 || 0%{?rhel} == 4
-Requires:       python-kitchen
-%endif
+Requires:       fedpkg = %{version}-%{release}
 
 BuildArch:      noarch
 
 %description
 Set of utilities useful for a fedora packager in setting up their environment.
+
+%package     -n fedpkg
+Summary:        fedora utility for working with dist-git
+Group:          Applications/Databases
+Requires:       GitPython >= 0.2.0, python-argparse, curl
+Requires:       fedora-packager = %{version}-%{release}
+%if 0%{?rhel} == 5 || 0%{?rhel} == 4
+Requires:       python-kitchen
+%endif
+
+%description -n fedpkg
+Provides the fedpkg command for working with dist-git
+
 
 %prep
 %setup -q
@@ -51,17 +61,27 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc COPYING TODO AUTHORS ChangeLog
 %{_bindir}/*
-%{python_sitelib}/pyfedpkg
+%exclude %{_bindir}/fedpkg
 %{python_sitelib}/fedora_cert
+
+%files -n fedpkg
+%doc COPYING TODO AUTHORS ChangeLog
+%defattr(-,root,root,-)
+%{_bindir}/fedpkg
+%{python_sitelib}/pyfedpkg
+
 
 %changelog
 * Thu Aug 12 2010 Dennis Gilmore <dennis@asuil.us> - 0.5.1.2-1
 - fix rh bz 619733 619879 619935 620254 620465 620595 620648
 - 620653 620750 621148 621808 622291 622716
 
+* Fri Jul 30 2010 Dennis Gilmore <dennis@ausil.us> -0.5.1.0-2
+- split fedpkg out on its own
+
 * Thu Jul 29 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.1.0-1
 - wrap fedora-cert in try except 
--fedpkg fixes
+- fedpkg fixes
 - require python-kitchen on EL-4 and 5
 
 * Wed Jul 28 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.0.1-1

@@ -382,8 +382,9 @@ def clone(module, user, path=None, branch=None, bare_dir=None):
     _run_command(cmd)
 
     # Set push.default to "tracking"
-    repo = git.Repo(module)
-    repo.git.config('--add', 'push.default', 'tracking')
+    if not bare_dir:
+        repo = git.Repo(os.path.join(path, module))
+        repo.git.config('--add', 'push.default', 'tracking')
     return
 
 def clone_with_dirs(module, user, path=None):
@@ -429,6 +430,7 @@ def clone_with_dirs(module, user, path=None):
             branch_git = git.Git(branch_path)
             branch_git.config("--replace-all", "remote.origin.url",
                     GITBASEURL % {'user': user, 'module': module})
+            branch_git.config('--add', 'push.default', 'tracking')
         except (git.GitCommandError, OSError), e:
             raise FedpkgError('Could not locally clone %s from %s: %s' %
                     (branch, repo_path, e))

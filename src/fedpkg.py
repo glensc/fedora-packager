@@ -280,14 +280,7 @@ def build(args):
     chain = None
     if hasattr(args, 'chain'):
         chain = args.chain
-    if not args.user:
-        # Doing a try doesn't really work since the fedora_cert library just
-        # exits on error, but if that gets fixed this will work better.
-        try:
-            args.user = fedora_cert.read_user_cert()
-        except:
-            log.debug('Could not read Fedora cert, using login name')
-            args.user = os.getlogin()
+    user = getuser(args.user)
     # Need to do something with BUILD_FLAGS or KOJI_FLAGS here for compat
     try:
         mymodule = pyfedpkg.PackageModule(args.path)
@@ -299,7 +292,7 @@ def build(args):
     if args.target:
         mymodule.target = args.target
     try:
-        mymodule.init_koji(args.user, kojiconfig)
+        mymodule.init_koji(user, kojiconfig)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not log into koji: %s' % e)
         sys.exit(1)
@@ -386,6 +379,19 @@ def chainbuild(args):
     args.scratch = False
     build(args)
 
+def getuser(user=None):
+    if user:
+        return user
+    else:
+        # Doing a try doesn't really work since the fedora_cert library just
+        # exits on error, but if that gets fixed this will work better.
+        try:
+            return fedora_cert.read_user_cert()
+        except:
+            log.debug('Could not read Fedora cert, using login name')
+            return os.getlogin()
+
+
 def check(args):
     # not implimented; Not planned
     log.warning('Not implimented yet, got %s' % args)
@@ -412,19 +418,16 @@ def clog(args):
         sys.exit(1)
 
 def clone(args):
-    if not args.user and not args.anonymous:
+    user = None
+    if not args.anonymous:
         # Doing a try doesn't really work since the fedora_cert library just
         # exits on error, but if that gets fixed this will work better.
-        try:
-            args.user = fedora_cert.read_user_cert()
-        except:
-            log.debug('Could not read Fedora cert, using login name')
-            args.user = os.getlogin()
+        user = getuser(args.user)
     try:
         if args.branches:
-            pyfedpkg.clone_with_dirs(args.module[0], args.user)
+            pyfedpkg.clone_with_dirs(args.module[0], user)
         else:
-            pyfedpkg.clone(args.module[0], args.user, args.path, args.branch)
+            pyfedpkg.clone(args.module[0], user, args.path, args.branch)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not clone: %s' % e)
         sys.exit(1)
@@ -661,6 +664,7 @@ def unusedpatches(args):
 
 def update(args):
     """Submit a new update to bodhi"""
+    user = getuser(args.user)
     mymodule = pyfedpkg.PackageModule(args.path)
     nvr = '%s-%s-%s' % (mymodule.module, mymodule.ver, mymodule.rel)
     template = """\
@@ -691,13 +695,7 @@ def update(args):
     # Suggest that users restart after update
     suggest_reboot=False\
     """
-    if not args.user:
-        try:
-            args.user = fedora_cert.read_user_cert()
-        except:
-            log.debug('Could not read Fedora cert, using login name')
-            args.user = os.getlogin()
-
+    
     bodhi_args = {'nvr': nvr, 'bugs': ''}
 
     # Extract bug numbers from the latest changelog entry
@@ -727,7 +725,7 @@ def update(args):
     hash = pyfedpkg._hash_file('bodhi.template', 'sha1')
     if hash != orig_hash:
         cmd = ['bodhi', '--new', '--release', mymodule.branch, '--file',
-               'bodhi.template', nvr, '--username', args.user]
+               'bodhi.template', nvr, '--username', user]
         try:
             pyfedpkg._run_command(cmd, shell=True)
         except pyfedpkg.FedpkgError, e:

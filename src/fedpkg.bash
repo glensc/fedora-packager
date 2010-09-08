@@ -15,7 +15,14 @@ _fedpkg()
     }
 
     local cur prev
-    _get_comp_words_by_ref cur prev
+    # _get_comp_words_by_ref is in bash-completion >= 1.2, which EL-5 lacks.
+    if type _get_comp_words_by_ref &>/dev/null; then
+        _get_comp_words_by_ref cur prev
+    else
+        cur="${COMP_WORDS[COMP_CWORD]}"
+        prev="${COMP_WORDS[COMP_CWORD-1]}"
+    fi
+    
 
     local paths_exclude="@(.git|*/.git)"
 

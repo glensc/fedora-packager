@@ -27,6 +27,7 @@ import ConfigParser
 import stat
 import StringIO
 import OpenSSL
+import fnmatch
 
 
 # Define some global variables, put them here to make it easy to change
@@ -840,6 +841,14 @@ class GitIgnore(object):
             self.__lines.append(line)
             self.modified = True
 
+    def match(self, line):
+        line = line.lstrip('/').rstrip('\n')
+        for entry in self.__lines:
+            entry = entry.lstrip('/').rstrip('\n')
+            if fnmatch.fnmatch(line, entry):
+                return True
+        return False
+
     def write(self):
         """ Write the new .gitignore file if any modifications were made. """
         if self.modified:
@@ -1437,7 +1446,8 @@ class PackageModule:
                 sources_file.write("%s  %s\n" % (file_hash, file_basename))
 
             # Add this file to .gitignore if it's not already there:
-            gitignore.add('/%s' % file_basename)
+            if not gitignore.match(file_basename):
+                gitignore.add('/%s' % file_basename)
 
             if lookaside.file_exists(self.module, file_basename, file_hash):
                 # Already uploaded, skip it:

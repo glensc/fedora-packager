@@ -3,139 +3,244 @@
 have fedpkg &&
 _fedpkg()
 {
-    local cur prev commands options command
-
     COMPREPLY=()
+
+    in_array()
+    {
+        local i
+        for i in $2; do
+            [[ $i = $1 ]] && return 0
+        done
+        return 1
+    }
+
+    local cur prev
     _get_comp_words_by_ref cur prev
 
-    # define all available commands to complete
-    commands='help build chain-build clean clog clone co commit ci compile \
-    diff gimmespec giturl import install lint local mockbuild new new-sources \
-    patch prep push scratch-build sources srpm switch-branch tag-request \
-    unused-patches update upload verrel'
+    local paths_exclude="@(.git|*/.git)"
 
-    if [[ $COMP_CWORD -eq 1 ]] ; then
-        if [[ "$cur" == -* ]]; then
-            # show available options when no subcommand is provided
-            COMPREPLY=( $( compgen -W '-h --help -u --user --path -v -q' \
-            -- "$cur" ) )
-        else
-            COMPREPLY=( $( compgen -W "$commands" -- "$cur" ) )
+    # global options
+
+    local options="-h --help -v -q"
+    local options_value="-u --user --path"
+    local commands="build chain-build ci clean clog clone co commit compile diff gimmespec giturl help \
+    import install lint local mockbuild new new-sources patch prep push scratch-build sources srpm \
+    switch-branch tag-request unused-patches update upload verrel"
+
+    # parse main options and get command
+
+    local command=
+    local command_first=
+    local path=
+
+    local i w
+    for (( i = 0; i < ${#COMP_WORDS[*]} - 1; i++ )); do
+        w="${COMP_WORDS[$i]}"
+        # option
+        if [[ ${w:0:1} = - ]]; then
+            if in_array "$w" "$options_value"; then
+                ((i++))
+                [[ "$w" = --path ]] && path="${COMP_WORDS[$i]}"
+            fi
+        # command
+        elif in_array "$w" "$commands"; then
+            command="$w"
+            command_first=$((i+1))
+            break
         fi
-    else
-        # these completions are available to all commands and are executed
-        # when a specific parameter is given
-        case $prev in
-            # list all files in current directory
-            --path|--file|-F|--outdir)
-                _filedir
-                return 0;
+    done
+
+    # complete base options
+
+    if [[ -z $command ]]; then
+        case "$prev" in
+            --user|-u)
                 ;;
-            # list available architectures when provided with these parameters
-            --arch|--arches)
-                COMPREPLY=( $( compgen -W 'i386 i586 i686 x86_64' -- "$cur" ) )
-                return 0;
+            --path)
+                COMPREPLY=( $(compgen -d -X "$paths_exclude" -- "$cur") )
                 ;;
-             # list all source RPMs in current directory
-             --srpm)
-                 COMPREPLY=( ${COMPREPLY[@]:-} \
-                 $( compgen -W '$( command ls *.src.rpm 2>/dev/null )' \
-                 -- "$cur" ) )
-                 return 0;
-                ;;
-             -*)
-                return 0;
+            *)
+                COMPREPLY=( $(compgen -W "$options $options_value $commands" -- "$cur") )
                 ;;
         esac
 
-        command=${COMP_WORDS[1]}
+        return 0
+    fi
 
-        if [[ "$cur" == -* ]]; then
-            # list possible options for the command
-            case $command in
-                build)
-                    options='--nowait --background --skip-tag --scratch'
-                    ;;
-                chain-build)
-                    options='--nowait --background'
-                    ;;
-                clean)
-                    options='--dy-run -n -x'
-                    ;;
-                clone|co)
-                    options='--branches -B --branch -b --anonymous -a'
-                    ;;
-                commit|ci)
-                    options='-m --message -F --file -p --push'
-                    ;;
-                compile)
-                    options='--arch --short-circuit'
-                    ;;
-                import)
-                    options='--branch -b --create -c'
-                    ;;
-                install)
-                    options='--arch --short-circuit'
-                    ;;
-                local)
-                    options='--arch --md5'
-                    ;;
-                patch)
-                    options='--suffix --rediff'
-                    ;;
-                prep)
-                    options='--arch'
-                    ;;
-                scratch-build)
-                    options='--nowait --background --arches --srpm'
-                    ;;
-                sources)
-                    options='--outdir'
-                    ;;
-                srpm)
-                    options='--md5'
-                    ;;
-                switch-branch)
-                    options='-l'
-                    ;;
-                # don't complete by listing files in current directory for
-                # these commands, just provide the help option
-                clog|gimmespec|lint|mockbuild|new|giturl|push|tag-request|\
-                unused-patches|update|verrel)
-                    options='-h --help'
-                    ;;
-            esac
-            # these options are available to all commands
-            options="$options --help -h"
+    # parse command specific options
 
-            COMPREPLY=( $( compgen -W "$options" -- "$cur" ) )
-        else
-            # different completion for these commands
-            case $command in
-                upload)
-                    _filedir
-                    ;;
-                import)
-                    # complete by listing all source rpms
-                    COMPREPLY=( ${COMPREPLY[@]:-} \
-                        $( compgen -W '$( command ls *.src.rpm 2>/dev/null )' \
-                        -- "$cur" ) )
-                    ;;
-                # no further arguments are required for these commands
-                help|build|clean|clog|compile|gimmespec|giturl|install|lint|\
-                local|mockbuild|new|patch|prep|push|scratch-build|sources|\
-                srpm|switch-branch|tag-request|unused-patches|update|verrel)
-                    ;;
-                *)
-                    _filedir
-                    ;;
+    local options=
+    local options_target= options_arches= options_branch= options_string= options_file= options_srpm=
+    local after= after_more=
+
+    case $command in
+        help|clog|gimmespec|giturl|lint|mockbuild|new|push|tag-request|unused-patches|update|verrel)
+            ;;
+        build)
+            options="--nowait --background --skip-tag --scratch"
+            options_target="--target"
+            ;;
+        chain-build)
+            options="--nowait --background"
+            options_target="--target"
+            after="package"
+            after_more=true
+            ;;
+        clean)
+            options="--dry-run -n -x"
+            ;;
+        clone|co)
+            options="--branches -B --anonymous -a"
+            options_branch="-b"
+            after="package"
+            ;;
+        commit|ci)
+            options="--push -p"
+            options_string="--message -m"
+            options_file="--file -F"
+            after="file"
+            after_more=true
+            ;;
+        compile|install)
+            options="--short-circuit"
+            options_arch="--arch"
+            ;;
+        diff)
+            options="--cached"
+            after="file"
+            after_more=true
+            ;;
+        import)
+            options="--create -c"
+            options_branch="--branch -b"
+            after="srpm"
+            ;;
+        local)
+            options="--md5"
+            options_arch="--arch"
+            ;;
+        patch)
+            options="--rediff"
+            options_string="--suffix"
+            ;;
+        prep)
+            options_arch="--arch"
+            ;;
+        scratch-build)
+            options="--nowait --background --srpm"
+            options_target="--target"
+            options_arches="--arches"
+            options_srpm="--srpm"
+            ;;
+        sources)
+            options_dir="--outdir"
+            ;;
+        srpm)
+            options="--md5"
+            ;;
+        switch-branch)
+            options="--list -l"
+            after="branch"
+            ;;
+        upload|new-sources)
+            after="files"
+            after_more=true
+            ;;
+    esac
+
+    local all_options="-h --help $options"
+    local all_options_value="$options_target $options_arches $options_branch $options_string $options_file $options_dir"
+
+    # count non-option parametrs
+
+    local i w
+    local last_option=
+    local after_counter=0
+    for (( i = $command_first; i < ${#COMP_WORDS[*]} - 1; i++)); do
+        w="${COMP_WORDS[$i]}"
+        if [[ ${w:0:1} = - ]]; then
+            if in_array "$w" "$all_options"; then
+                last_option="$w"
+                continue
+            elif in_array "$w" "$all_options_value"; then
+                last_option="$w"
+                ((i++))
+                continue
+            fi
+        fi
+        in_array "$last_option" "$options_arches" || ((after_counter++))
+    done
+
+    # completion
+
+    if [[ -n $options_target ]] && in_array "$prev" "$options_target"; then
+        COMPREPLY=( $(compgen -W "$(_fedpkg_target)" -- "$cur") )
+
+    elif [[ -n $options_arches ]] && in_array "$last_option" "$options_arches"; then
+        COMPREPLY=( $(compgen -W "$(_fedpkg_arch) $all_options" -- "$cur") )
+
+    elif [[ -n $options_srpm ]] && in_array "$prev" "$options_srpm"; then
+        COMPREPLY=( $(compgen -f -o plusdirs -X "!*.src.rpm" -- "$cur") )
+
+    elif [[ -n $options_branch ]] && in_array "$prev" "$options_branch"; then
+        COMPREPLY=( $(compgen -W "$(_fedpkg_branch "$path")" -- "$cur") )
+
+    elif [[ -n $options_file ]] && in_array "$prev" "$options_file"; then
+        COMPREPLY=( $(compgen -f -o plusdirs -X "$paths_exclude" -- "$cur") )
+
+    elif [[ -n $options_dir ]] && in_array "$prev" "$options_dir"; then
+        COMPREPLY=( $(compgen -d -X "$paths_exclude" -- "$cur") )
+
+    elif [[ -n $options_string ]] && in_array "$prev" "$options_string"; then
+        COMPREPLY=( )
+
+    else
+        local compgen_extra=
+        local after_options=
+
+        if [[ $after_counter -eq 0 ]] || [[ $after_more = true ]]; then
+            case $after in
+                file)    compgen_extra="-o plusdirs -f -X $paths_exclude" ;;
+                srpm)    compgen_extra='-o plusdirs -f -X !*.src.rpm' ;;
+                branch)  after_options="$(_fedpkg_branch "$path")" ;;
+                package) after_options="$(_fedpkg_package "$cur")";;
             esac
         fi
+
+        COMPREPLY=( $(compgen -W "$all_options $all_options_value $after_options" $compgen_extra -- "$cur" ) )
     fi
 
     return 0
 } &&
 complete -F _fedpkg -o filenames fedpkg
+
+have _fedpkg &&
+_fedpkg_target()
+{
+    koji list-targets --quiet 2>/dev/null | cut -d" " -f1
+}
+
+have _fedpkg &&
+_fedpkg_arch()
+{
+    echo "i386 x86_64 ppc ppc64 s390 s390x sparc sparc64"
+}
+
+have _fedpkg &&
+_fedpkg_branch()
+{
+    local git_options=
+    [[ -n $1 ]] && git_options="--git-dir=$1/.git"
+
+    git $git_options branch -l 2>/dev/null | sed 's/^\W*//'
+    git $git_options branch -rl 2>/dev/null | grep -v origin/HEAD | sed 's/^\W*//' | cut -d/ -f2
+}
+
+have _fedpkg &&
+_fedpkg_package()
+{
+    repoquery -C --qf=%{sourcerpm} "$1*" 2>/dev/null | sort -u | sed -r 's/(-[^-]*){2}\.src\.rpm$//'
+}
 
 # Local variables:
 # mode: shell-script

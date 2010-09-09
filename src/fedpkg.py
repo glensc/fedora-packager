@@ -695,7 +695,7 @@ def update(args):
     # Suggest that users restart after update
     suggest_reboot=False\
     """
-    
+
     bodhi_args = {'nvr': nvr, 'bugs': ''}
 
     # Extract bug numbers from the latest changelog entry

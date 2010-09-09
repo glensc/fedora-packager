@@ -870,10 +870,10 @@ packages will be built sequentially.
                                           help = 'Commit changes')
     parser_commit.add_argument('-m', '--message',
                                default = None,
-                               help = 'Use the given <msg> as the commit message.')
+                               help = 'Use the given <msg> as the commit message')
     parser_commit.add_argument('-F', '--file',
                                default = None,
-                               help = 'Take the commit message from the given file.')
+                               help = 'Take the commit message from the given file')
     # allow one to commit /and/ push at the same time.
     parser_commit.add_argument('-p', '--push',
                                default = False,

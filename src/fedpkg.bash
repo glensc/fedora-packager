@@ -14,6 +14,14 @@ _fedpkg()
         return 1
     }
 
+    _filedir_exclude_paths()
+    {
+        _filedir "$@"
+        for ((i=0; i<=${#COMPREPLY[@]}; i++)); do
+            [[ ${COMPREPLY[$i]} =~ /?\.git/? ]] && unset COMPREPLY[$i]
+        done
+    }
+
     local cur prev
     # _get_comp_words_by_ref is in bash-completion >= 1.2, which EL-5 lacks.
     if type _get_comp_words_by_ref &>/dev/null; then
@@ -23,9 +31,6 @@ _fedpkg()
         prev="${COMP_WORDS[COMP_CWORD-1]}"
     fi
     
-
-    local paths_exclude="@(.git|*/.git)"
-
     # global options
 
     local options="-h --help -v -q"
@@ -64,7 +69,7 @@ _fedpkg()
             --user|-u)
                 ;;
             --path)
-                COMPREPLY=( $(compgen -d -X "$paths_exclude" -- "$cur") )
+                _filedir_exclude_paths
                 ;;
             *)
                 COMPREPLY=( $(compgen -W "$options $options_value $commands" -- "$cur") )
@@ -150,7 +155,7 @@ _fedpkg()
             after="branch"
             ;;
         upload|new-sources)
-            after="files"
+            after="file"
             after_more=true
             ;;
     esac
@@ -187,16 +192,16 @@ _fedpkg()
         COMPREPLY=( $(compgen -W "$(_fedpkg_arch) $all_options" -- "$cur") )
 
     elif [[ -n $options_srpm ]] && in_array "$prev" "$options_srpm"; then
-        COMPREPLY=( $(compgen -f -o plusdirs -X "!*.src.rpm" -- "$cur") )
+        _filedir_exclude_paths "*.src.rpm"
 
     elif [[ -n $options_branch ]] && in_array "$prev" "$options_branch"; then
         COMPREPLY=( $(compgen -W "$(_fedpkg_branch "$path")" -- "$cur") )
 
     elif [[ -n $options_file ]] && in_array "$prev" "$options_file"; then
-        COMPREPLY=( $(compgen -f -o plusdirs -X "$paths_exclude" -- "$cur") )
+        _filedir_exclude_paths
 
     elif [[ -n $options_dir ]] && in_array "$prev" "$options_dir"; then
-        COMPREPLY=( $(compgen -d -X "$paths_exclude" -- "$cur") )
+        _filedir_exclude_paths -d
 
     elif [[ -n $options_string ]] && in_array "$prev" "$options_string"; then
         COMPREPLY=( )
@@ -207,14 +212,14 @@ _fedpkg()
 
         if [[ $after_counter -eq 0 ]] || [[ $after_more = true ]]; then
             case $after in
-                file)    compgen_extra="-o plusdirs -f -X $paths_exclude" ;;
-                srpm)    compgen_extra='-o plusdirs -f -X !*.src.rpm' ;;
+                file)    _filedir_exclude_paths; compgen_extra=${COMPREPLY[@]} ;;
+                srpm)    _filedir_exclude_paths "*.src.rpm"; compgen_extra=${COMPREPLY[@]} ;;
                 branch)  after_options="$(_fedpkg_branch "$path")" ;;
                 package) after_options="$(_fedpkg_package "$cur")";;
             esac
         fi
 
-        COMPREPLY=( $(compgen -W "$all_options $all_options_value $after_options" $compgen_extra -- "$cur" ) )
+        COMPREPLY=( $(compgen -W "$all_options $all_options_value $after_options $compgen_extra" -- "$cur" ) )
     fi
 
     return 0

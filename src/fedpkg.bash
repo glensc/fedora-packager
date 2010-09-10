@@ -89,7 +89,8 @@ _fedpkg()
         help|clog|gimmespec|giturl|lint|mockbuild|new|push|tag-request|unused-patches|update|verrel)
             ;;
         build)
-            options="--nowait --background --skip-tag --scratch"
+            options="--nowait --background --skip-tag --scratch --srpm"
+            options_srpm="--srpm"
             options_target="--target"
             ;;
         chain-build)

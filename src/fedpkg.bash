@@ -33,8 +33,8 @@ _fedpkg()
     
     # global options
 
-    local options="-h --help -v -q"
-    local options_value="-u --user --path"
+    local options="--help -v -q"
+    local options_value="--user --path"
     local commands="build chain-build ci clean clog clone co commit compile diff gimmespec giturl help \
     import install lint local mockbuild new new-sources patch prep push scratch-build sources srpm \
     switch-branch tag-request unused-patches update upload verrel"
@@ -65,6 +65,11 @@ _fedpkg()
     # complete base options
 
     if [[ -z $command ]]; then
+        if [[ $cur == -* ]]; then
+            COMPREPLY=( $(compgen -W "$options $options_value" -- "$cur") )
+            return 0
+        fi
+
         case "$prev" in
             --user|-u)
                 ;;
@@ -72,7 +77,7 @@ _fedpkg()
                 _filedir_exclude_paths
                 ;;
             *)
-                COMPREPLY=( $(compgen -W "$options $options_value $commands" -- "$cur") )
+                COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
                 ;;
         esac
 
@@ -100,17 +105,17 @@ _fedpkg()
             after_more=true
             ;;
         clean)
-            options="--dry-run -n -x"
+            options="--dry-run -x"
             ;;
         clone|co)
-            options="--branches -B --anonymous -a"
+            options="--branches --anonymous"
             options_branch="-b"
             after="package"
             ;;
         commit|ci)
-            options="--push -p"
-            options_string="--message -m"
-            options_file="--file -F"
+            options="--push"
+            options_string="--message"
+            options_file="--file"
             after="file"
             after_more=true
             ;;
@@ -124,8 +129,8 @@ _fedpkg()
             after_more=true
             ;;
         import)
-            options="--create -c"
-            options_branch="--branch -b"
+            options="--create"
+            options_branch="--branch"
             after="srpm"
             ;;
         local)
@@ -152,7 +157,7 @@ _fedpkg()
             options="--md5"
             ;;
         switch-branch)
-            options="--list -l"
+            options="--list"
             after="branch"
             ;;
         upload|new-sources)
@@ -161,7 +166,7 @@ _fedpkg()
             ;;
     esac
 
-    local all_options="-h --help $options"
+    local all_options="--help $options"
     local all_options_value="$options_target $options_arches $options_branch $options_string $options_file $options_dir"
 
     # count non-option parametrs
@@ -218,6 +223,11 @@ _fedpkg()
                 branch)  after_options="$(_fedpkg_branch "$path")" ;;
                 package) after_options="$(_fedpkg_package "$cur")";;
             esac
+        fi
+
+        if [[ $cur != -* ]]; then
+            all_options=
+            all_options_value=
         fi
 
         COMPREPLY=( $(compgen -W "$all_options $all_options_value $after_options $compgen_extra" -- "$cur" ) )

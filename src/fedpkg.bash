@@ -224,7 +224,7 @@ _fedpkg()
 
     return 0
 } &&
-complete -F _fedpkg -o filenames fedpkg
+complete -F _fedpkg fedpkg
 
 have _fedpkg &&
 _fedpkg_target()

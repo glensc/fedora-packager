@@ -174,12 +174,12 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, shell=shell,
                                          cwd=cwd)
-                proc2 = subprocess.Popen(pipecmd, env=environ,
+                proc = subprocess.Popen(pipecmd, env=environ,
                                          stdin=proc1.stdout,
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, shell=shell,
                                          cwd=cwd)
-                output, error = proc2.communicate()
+                output, error = proc.communicate()
             else:
                 proc = subprocess.Popen(command, env=environ,
                                         stdout=subprocess.PIPE,

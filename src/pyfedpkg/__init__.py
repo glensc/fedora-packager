@@ -172,7 +172,8 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
             if pipe:
                 proc1 = subprocess.Popen(command, env=environ,
                                          stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE, shell=shell,
+                                         stderr=subprocess.STDOUT,
+                                         shell=shell,
                                          cwd=cwd)
                 proc = subprocess.Popen(pipecmd, env=environ,
                                          stdin=proc1.stdout,

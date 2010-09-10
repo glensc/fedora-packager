@@ -1074,7 +1074,8 @@ packages will be built sequentially.
         log.setLevel(logging.WARNING)
     else:
         log.setLevel(logging.INFO)
-    streamhandler = logging.StreamHandler()
+    # log things to stdout instead of stderr
+    streamhandler = logging.StreamHandler(stream=sys.stdout)
     formatter = logging.Formatter('%(message)s')
     streamhandler.setFormatter(formatter)
     log.addHandler(streamhandler)

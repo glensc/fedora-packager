@@ -37,6 +37,13 @@ SECONDARY_ARCH_PKGS = {'sparc': ['silo', 'prtconf', 'lssbus', 'afbinit',
                        'ppc': ['ppc64-utils', 'yaboot'],
                        'arm': []}
 
+# Add a log filter class
+class StdoutFilter(logging.Filter):
+
+    def filter(self, record):
+        # If the record level is 20 (INFO) or lower, let it through
+        return record.levelno <= logging.INFO
+
 # Add a class stolen from /usr/bin/koji to watch tasks
 # this was cut/pasted from koji, and then modified for local use.
 # The formatting is koji style, not the stile of this file.  Do not use these
@@ -1066,7 +1073,11 @@ packages will be built sequentially.
     # Parse the args
     args = parser.parse_args()
 
-    # setup the logger
+    # setup the logger -- This logger will take things of INFO or DEBUG and
+    # log it to stdout.  Anything above that (WARN, ERROR, CRITICAL) will go
+    # to stderr.  Normal operation will show anything INFO and above.
+    # Quiet hides INFO, while Verbose exposes DEBUG.  In all cases WARN or
+    # higher are exposed (via stderr).
     log = pyfedpkg.log
     if args.v:
         log.setLevel(logging.DEBUG)
@@ -1074,11 +1085,17 @@ packages will be built sequentially.
         log.setLevel(logging.WARNING)
     else:
         log.setLevel(logging.INFO)
-    # log things to stdout instead of stderr
-    streamhandler = logging.StreamHandler(stream=sys.stdout)
     formatter = logging.Formatter('%(message)s')
-    streamhandler.setFormatter(formatter)
-    log.addHandler(streamhandler)
+    # have to create a filter for the stdout stream to filter out WARN+
+    myfilt = StdoutFilter()
+    stdouthandler = logging.StreamHandler(stream=sys.stdout)
+    stdouthandler.addFilter(myfilt)
+    stdouthandler.setFormatter(formatter)
+    stderrhandler = logging.StreamHandler()
+    stderrhandler.setLevel(logging.WARNING)
+    stderrhandler.setFormatter(formatter)
+    log.addHandler(stdouthandler)
+    log.addHandler(stderrhandler)
 
     # Run the necessary command
     try:

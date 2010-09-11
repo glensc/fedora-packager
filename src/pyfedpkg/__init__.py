@@ -190,8 +190,6 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
         except OSError, e:
             raise FedpkgError(e)
         log.info(output)
-        if error:
-            log.error(error)
         if proc.returncode:
             raise FedpkgError('Command %s returned code %s with error: %s' %
                               (subprocess.list2cmdline(cmd),
@@ -288,8 +286,7 @@ def _srpmdetails(srpm):
         raise FedpkgError(e)
     name = output
     if error:
-        log.error(error)
-        raise FedpkgError('Error querying srpm')
+        raise FedpkgError('Error querying srpm: %s' % error)
 
     # now get the files and upload files
     files = []
@@ -303,8 +300,7 @@ def _srpmdetails(srpm):
     except OSError, e:
         raise FedpkgError(e)
     if error:
-        log.error(error)
-        raise FedpkgError('Error querying srpm')
+        raise FedpkgError('Error querying srpm:' % error)
     contents = output.split()
     # Cycle through the stuff and sort correctly by its extension
     for file in contents:

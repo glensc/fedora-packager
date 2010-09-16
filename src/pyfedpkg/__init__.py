@@ -638,6 +638,20 @@ def new(path=None):
     log.debug('Diffing from tag %s' % tag)
     return repo.git.diff('-M', tag)
 
+def pull():
+    """Pull changes from the main repository"""
+
+    cmd = ['git', 'pull']
+    _run_command(cmd)
+    return
+ 
+def push():
+    """Push changes to the main repository"""
+
+    cmd = ['git', 'push']
+    _run_command(cmd)
+    return
+
 def sources(path, outdir=None):
     """Download source files"""
 
@@ -1544,20 +1558,6 @@ class PackageModule:
         _run_command(cmd, shell=True)
         return
  
-  def pull(self):
-        """Pull changes from the main repository"""
-
-        cmd = ['git', 'pull']
-        _run_command(cmd)
-        return
- 
-    def push(self):
-        """Push changes to the main repository"""
-
-        cmd = ['git', 'push']
-        _run_command(cmd)
-        return
-
     def srpm(self, hashtype=None):
         """Create an srpm using hashtype from content in the module
     

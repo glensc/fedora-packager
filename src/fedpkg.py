@@ -600,16 +600,14 @@ def prep(args):
 
 def pull(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
-        mymodule.pull()
+        pyfedpkg.pull()
     except pyfedpkg.FedpkgError, e:
         log.error('Could not push: %s' % e)
         sys.exit(1)
 
 def push(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
-        mymodule.push()
+        pyfedpkg.push()
     except pyfedpkg.FedpkgError, e:
         log.error('Could not push: %s' % e)
         sys.exit(1)

@@ -440,6 +440,14 @@ def clone(args):
         sys.exit(1)
 
 def commit(args):
+    if args.clog:
+        try:
+            mymodule = pyfedpkg.PackageModule(args.path)
+            mymodule.clog()
+        except pyfedpkg.FedpkgError, e:
+            log.error('coult not create clog: %s' % e)
+            sys.exit(1)
+        args.file = os.path.abspath('clog')
     try:
         pyfedpkg.commit(args.path, args.message, args.file, args.files)
     except pyfedpkg.FedpkgError, e:
@@ -909,6 +917,10 @@ packages will be built sequentially.
     # commit stuff
     parser_commit = subparsers.add_parser('commit',
                                           help = 'Commit changes')
+    parser_commit.add_argument('-c', '--clog',
+                               default = False,
+                               action = 'store_true',
+                               help = 'Generate the commit message from the %Changelog section')
     parser_commit.add_argument('-m', '--message',
                                default = None,
                                help = 'Use the given <msg> as the commit message')

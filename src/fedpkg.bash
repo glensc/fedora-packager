@@ -108,7 +108,7 @@ _fedpkg()
             after="package"
             ;;
         commit|ci)
-            options="--push -p"
+            options="--push -p --clog -c"
             options_string="--message -m"
             options_file="--file -F"
             after="file"

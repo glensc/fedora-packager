@@ -1264,13 +1264,20 @@ class PackageModule:
     def gimmespec(self):
         """Return the name of a specfile within a package module"""
     
+        deadpackage = False
+
         # Get a list of files in the path we're looking at
         files = os.listdir(self.path)
         # Search the files for the first one that ends with ".spec"
         for f in files:
             if f.endswith('.spec'):
                 return f
-        raise FedpkgError('No spec file found.')
+            if f == 'dead.package':
+                deadpackage = True
+        if deadpackage:
+            raise FedpkgError('No spec file found. This package is retired')
+        else:
+            raise FedpkgError('No spec file found. Please import a new package')
 
     def giturl(self):
         """Return the git url that would be used for building"""

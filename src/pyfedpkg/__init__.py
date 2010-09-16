@@ -1543,7 +1543,14 @@ class PackageModule:
         # Run the command
         _run_command(cmd, shell=True)
         return
+ 
+  def pull(self):
+        """Pull changes from the main repository"""
 
+        cmd = ['git', 'pull']
+        _run_command(cmd)
+        return
+ 
     def push(self):
         """Push changes to the main repository"""
 

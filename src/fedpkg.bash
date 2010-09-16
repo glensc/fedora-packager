@@ -36,7 +36,7 @@ _fedpkg()
     local options="-h --help -v -q"
     local options_value="-u --user --path"
     local commands="build chain-build ci clean clog clone co commit compile diff gimmespec giturl help \
-    import install lint local mockbuild new new-sources patch prep push scratch-build sources srpm \
+    import install lint local mockbuild new new-sources patch prep pull push scratch-build sources srpm \
     switch-branch tag tag-request unused-patches update upload verrel"
 
     # parse main options and get command

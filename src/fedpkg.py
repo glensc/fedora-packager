@@ -598,6 +598,14 @@ def prep(args):
         log.error('Could not prep: %s' % e)
         sys.exit(1)
 
+def pull(args):
+    try:
+        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule.pull()
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not push: %s' % e)
+        sys.exit(1)
+
 def push(args):
     try:
         mymodule = pyfedpkg.PackageModule(args.path)
@@ -1023,6 +1031,12 @@ packages will be built sequentially.
                                         help = 'Local test rpmbuild prep')
     parser_prep.add_argument('--arch', help = 'Prep for a specific arch')
     parser_prep.set_defaults(command = prep)
+
+    # Pull stuff
+    parser_pull = subparsers.add_parser('pull',
+                                help = 'Pull changes from remote repository')
+    parser_pull.set_defaults(command = pull)
+
 
     # Push stuff
     parser_push = subparsers.add_parser('push',

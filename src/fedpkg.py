@@ -440,6 +440,7 @@ def clone(args):
         sys.exit(1)
 
 def commit(args):
+    mymodule = None
     if args.clog:
         try:
             mymodule = pyfedpkg.PackageModule(args.path)
@@ -453,6 +454,18 @@ def commit(args):
     except pyfedpkg.FedpkgError, e:
         log.error('Could not commit: %s' % e)
         sys.exit(1)
+    if args.tag:
+        try:
+            if not mymodule:
+                mymodule = pyfedpkg.PackageModule(args.path)
+            tagname = mymodule.getnvr()
+            filename = args.file
+            if args.clog:
+                filename = 'clog'
+            pyfedpkg.add_tag(tagname, True, args.message, filename)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Coult not create a tag: %s' % e)
+            sys.exit(1)
     if args.push:
         push(args)
 
@@ -921,6 +934,10 @@ packages will be built sequentially.
                                default = False,
                                action = 'store_true',
                                help = 'Generate the commit message from the %Changelog section')
+    parser_commit.add_argument('-t', '--tag',
+                               default = False,
+                               action = 'store_true',
+                               help = 'Create a tag for this commit')
     parser_commit.add_argument('-m', '--message',
                                default = None,
                                help = 'Use the given <msg> as the commit message')

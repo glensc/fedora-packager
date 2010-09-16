@@ -128,6 +128,9 @@ _fedpkg()
             options_branch="--branch -b"
             after="srpm"
             ;;
+	lint)
+	    options="--info -i"
+	    ;;
         local)
             options="--md5"
             options_arch="--arch"

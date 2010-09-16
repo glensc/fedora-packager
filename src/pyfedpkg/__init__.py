@@ -1385,7 +1385,7 @@ class PackageModule:
         _run_command(cmd, shell=True)
         return
 
-    def lint(self):
+    def lint(self, info=False):
         """Run rpmlint over a built srpm
 
         Log the output and returns nothing
@@ -1404,7 +1404,10 @@ class PackageModule:
             rpms.extend([os.path.join(self.path, arch, file) for file in
                          os.listdir(os.path.join(self.path, arch))
                          if file.endswith('.rpm')])
-        cmd = ['rpmlint', os.path.join(self.path, srpm)]
+        cmd = ['rpmlint']
+        if info:
+            cmd.extend(['-i'])
+        cmd.extend([os.path.join(self.path, srpm)])
         cmd.extend(rpms)
         # Run the command
         _run_command(cmd, shell=True)

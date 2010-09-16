@@ -549,7 +549,7 @@ def install(args):
 def lint(args):
     try:
         mymodule = pyfedpkg.PackageModule(args.path)
-        return mymodule.lint()
+        return mymodule.lint(info)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not run rpmlint: %s' % e)
         sys.exit(1)
@@ -1018,6 +1018,10 @@ packages will be built sequentially.
     # rpmlint target
     parser_lint = subparsers.add_parser('lint',
                             help = 'Run rpmlint against local build output')
+    parser_lint.add_argument('--info', '-i',
+                             default = False,
+                             action = 'store_true',
+                             help = 'Display explainations for reported messages')
     parser_lint.set_defaults(command = lint)
 
     # Build locally

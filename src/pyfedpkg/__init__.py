@@ -311,6 +311,23 @@ def _srpmdetails(srpm):
 
     return((name, files, uploadfiles))
 
+def add_tag(tagname, force=False, message=None, file=None):
+    """Add a git tag to the repository"""
+    cmd = ['git', 'tag']
+    cmd.extend(['-a'])
+    # force tag creation, if tag already exists
+    if force:
+        cmd.extend(['-f'])
+    # Description for the tag
+    if message:
+        cmd.extend(['-m', message])
+    elif file:
+        cmd.extend(['-F', os.path.abspath(file)])
+    cmd.append(tagname)
+    # make it so
+    _run_command(cmd)
+    log.info ('Tag \'%s\' was created' % tagname)        
+
 def clean(dry=False, useignore=True):
     """Clean a module checkout of untracked files.
 
@@ -331,7 +348,7 @@ def clean(dry=False, useignore=True):
     # Run it!
     _run_command(cmd)
     return
-
+ 
 def clone(module, user, path=None, branch=None, bare_dir=None):
     """Clone a repo, optionally check out a specific branch.
 
@@ -479,6 +496,18 @@ def commit(path=None, message=None, file=None, files=[]):
     _run_command(cmd, cwd=path)
     return
 
+def delete_tag(tagname=None):
+    """Delete a git tag from the repository
+    """
+
+    if not tagname:
+        raise fedpkgError('Please specified a tagname')
+    cmd = ['git', 'tag']
+    cmd.extend(['-d'])
+    cmd.extend(tagname)
+    _run_command(cmd)
+    log.info ('Tag %s was deleted' % ', '.join(delete))
+
 def get_latest_commit(module):
     """Discover the latest commit has for a given module and return it"""
 
@@ -581,6 +610,17 @@ def import_srpm(srpm, path=None):
     # Return to the caller and let them take it from there.
     os.chdir(oldpath)
     return(uploadfiles)
+
+def list_tag(tagname=None):
+    """Create a list of all tags in the repository which mathe a given pattern.
+       if list == '*' all tags will been shown.
+    """
+    cmd = ['git', 'tag']
+    cmd.extend(['-l'])
+    if not tagname == '*':
+        cmd.extend([tagname])
+    # make it so
+    _run_command(cmd)
 
 def new(path=None):
     """Return changes in a repo since the last tag"""
@@ -799,7 +839,6 @@ class Lookaside(object):
             raise FedpkgError('Lookaside failure.  Check your cert.')
         curl.close()
 
-
 class GitIgnore(object):
     """ Smaller wrapper for managing a .gitignore file and it's entries. """
 
@@ -966,7 +1005,7 @@ class PackageModule:
         self.hashtype = 'sha256'
         if self.branch.startswith('el5') or self.branch.startswith('el4'):
             self.hashtype = 'md5'
-
+ 
     def build(self, skip_tag=False, scratch=False, background=False,
               url=None, chain=None):
         """Initiate a build of the module.  Available options are:
@@ -1185,6 +1224,10 @@ class PackageModule:
             raise FedpkgError('Could not get version of %s: %s' % (self.module, e))
         # Get just the output, then split it by space, grab the first
         return output[0].split()[0]
+
+    def getnvr(self):
+        """Return Name-Version-Release of a package"""
+        return self.nvr
 
     def getrel(self):
         """Return the version-release of a package module."""

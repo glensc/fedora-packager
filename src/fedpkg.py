@@ -652,6 +652,35 @@ def switch_branch(args):
         print('Locals:\n%s\nRemotes:\n  %s' %
               ('\n'.join(locals), '\n  '.join(remotes)))
 
+def tag(args):
+    if args.list:
+        try:
+            pyfedpkg.list_tag(args.tag)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Could not create a list of the tag: %s' % e)
+            sys.exit(1)
+    elif args.delete:
+        try:
+            pyfedpkg.delete_tag(args.tag)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Coult not delete tag: %s' % e)
+            sys.exit(1)
+    else:
+        filename = args.file
+        tagname = args.tag
+        try:
+            if not tagname or args.clog:
+                mymodule = pyfedpkg.PackageModule(args.path)
+                if not tagname:
+                    tagname = mymodule.getnvr()
+                if clog:
+                    mymodule.clog()
+                    filename = 'clog'
+            pyfedpkg.add_tag(tagname, args.force, args.message, filename)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Coult not create a tag: %s' % e)
+            sys.exit(1)
+
 def tagrequest(args):
     # not implimented
     log.warning('Not implimented yet, got %s' % args)
@@ -871,7 +900,6 @@ packages will be built sequentially.
                                       conflict_handler = 'resolve',
                                       help = 'Alias for clone')
     parser_co.set_defaults(command = clone)
-
     # commit stuff
     parser_commit = subparsers.add_parser('commit',
                                           help = 'Commit changes')
@@ -1035,6 +1063,37 @@ packages will be built sequentially.
                                 help = 'List both remote-tracking branches and local branches',
                                 action = 'store_true')
     parser_switchbranch.set_defaults(command = switch_branch)
+
+    # tag stuff
+    parser_tag = subparsers.add_parser('tag',
+                                       help = 'Managementz of git tags')
+    parser_tag.add_argument('-f', '--force',
+                            default = False,
+                            action = 'store_true',
+                            help = 'Force the creation of the tag')
+    parser_tag.add_argument('-m', '--message',
+                               default = None,
+                               help = 'Use the given <msg> as the tag message')
+    parser_tag.add_argument('-c', '--clog',
+                            default = False,
+                            action = 'store_true',
+                            help = 'Generate the tag message from the %Changelog section')
+    parser_tag.add_argument('-F', '--file',
+                            default = None,
+                            help = 'Take the tag message from the given file')
+    parser_tag.add_argument('-l', '--list',
+                            default = False,
+                            action = 'store_true',
+                            help = 'List all tags with a given pattern, or all if not pattern is given')
+    parser_tag.add_argument('-d', '--delete',
+                            default = False,
+                            action = 'store_true',
+                            help = 'Delete a tag')
+    parser_tag.add_argument('tag',
+                            nargs = '?',
+                            default = None,
+                            help = 'Name of the tag')
+    parser_tag.set_defaults(command = tag)
 
     # Create a releng tag request
     parser_tagrequest = subparsers.add_parser('tag-request',

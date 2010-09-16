@@ -508,6 +508,34 @@ def delete_tag(tagname=None):
     _run_command(cmd)
     log.info ('Tag %s was deleted' % ', '.join(delete))
 
+def diff(path, cached=False, files=[]):
+    """Excute a git diff
+
+    optionally diff the cached or staged changes
+
+    Takes an optional list of files to diff reletive to the module base
+    directory
+
+    Logs the output and returns nothing
+
+    """
+
+    # Things work better if we're in our module directory
+    oldpath = os.getcwd()
+    os.chdir(path)
+    # build up the command
+    cmd = ['git', 'diff']
+    if cached:
+        cmd.append('--cached')
+    if files:
+        cmd.extend(files)
+
+    # Run it!
+    _run_command(cmd)
+    # popd
+    os.chdir(oldpath)
+    return
+
 def get_latest_commit(module):
     """Discover the latest commit has for a given module and return it"""
 
@@ -1190,35 +1218,6 @@ class PackageModule:
         cmd.extend(['-bc', os.path.join(self.path, self.spec)])
         # Run the command
         _run_command(cmd, shell=True)
-        return
-
-    def diff(self, cached=False, files=[]):
-        """Excute a git diff
-
-        optionally diff the cached or staged changes
-
-        Takes an optional list of files to diff reletive to the module base
-        directory
-
-        Logs the output and returns nothing
-
-        """
-
-        # Things work better if we're in our module directory
-        oldpath = os.getcwd()
-        os.chdir(self.path)
-
-        # build up the command
-        cmd = ['git', 'diff']
-        if cached:
-            cmd.append('--cached')
-        if files:
-            cmd.extend(files)
-
-        # Run it!
-        _run_command(cmd)
-        # popd
-        os.chdir(oldpath)
         return
 
     def getver(self):

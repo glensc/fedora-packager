@@ -1088,7 +1088,7 @@ packages will be built sequentially.
     formatter = logging.Formatter('%(message)s')
     # have to create a filter for the stdout stream to filter out WARN+
     myfilt = StdoutFilter()
-    stdouthandler = logging.StreamHandler(stream=sys.stdout)
+    stdouthandler = logging.StreamHandler(sys.stdout)
     stdouthandler.addFilter(myfilt)
     stdouthandler.setFormatter(formatter)
     stderrhandler = logging.StreamHandler()

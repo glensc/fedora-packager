@@ -167,6 +167,9 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
                                       stdin=proc.stdout,
                                       shell=shell,
                                       cwd=cwd)
+                (output, err) = proc.communicate()
+                if proc.returncode:
+                    raise FedpkgError('Non zero exit')
             else:
                 subprocess.check_call(command, env=environ, stdout=sys.stdout,
                                       stderr=sys.stderr, shell=shell,

@@ -129,7 +129,7 @@ _fedpkg()
             after="srpm"
             ;;
 	lint)
-	    options="--info -i"
+	    options="--info"
 	    ;;
         local)
             options="--md5"

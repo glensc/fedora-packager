@@ -1017,7 +1017,7 @@ packages will be built sequentially.
     parser_lint.add_argument('--info', '-i',
                              default = False,
                              action = 'store_true',
-                             help = 'Display explainations for reported messages')
+                             help = 'Display explanations for reported messages')
     parser_lint.set_defaults(command = lint)
 
     # Build locally

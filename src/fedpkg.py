@@ -458,11 +458,9 @@ def commit(args):
         try:
             if not mymodule:
                 mymodule = pyfedpkg.PackageModule(args.path)
-            tagname = mymodule.getnvr()
+            tagname = mymodule.nvr()
             filename = args.file
-            if args.clog:
-                filename = 'clog'
-            pyfedpkg.add_tag(tagname, True, args.message, filename)
+            pyfedpkg.add_tag(tagname, True, args.message, args.file)
         except pyfedpkg.FedpkgError, e:
             log.error('Coult not create a tag: %s' % e)
             sys.exit(1)

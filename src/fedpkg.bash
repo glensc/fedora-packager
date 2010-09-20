@@ -152,7 +152,7 @@ _fedpkg()
             options_dir="--outdir"
             ;;
 	tag)
-	    options="--clog -c --force -f --list -l --delete -d"
+	    options="--clog --force --list --delete"
 	    options_string="--message -m"
 	    options_file="--file -F"
 	    after_more=true

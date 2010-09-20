@@ -520,7 +520,7 @@ def diff(path, cached=False, files=[]):
 
     optionally diff the cached or staged changes
 
-    Takes an optional list of files to diff reletive to the module base
+    Takes an optional list of files to diff relative to the module base
     directory
 
     Logs the output and returns nothing

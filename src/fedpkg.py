@@ -482,7 +482,7 @@ def compile(args):
 
 def diff(args):
     try:
-        return mymodule.diff(args.path, args.cached, args.files)
+        return pyfedpkg.diff(args.path, args.cached, args.files)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not diff: %s' % e)
         sys.exit(1)

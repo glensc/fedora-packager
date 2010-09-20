@@ -1064,7 +1064,7 @@ packages will be built sequentially.
 
     # Pull stuff
     parser_pull = subparsers.add_parser('pull',
-                                help = 'Pull changes from remote repository')
+                                help = 'Pull changes from remote repository and update working copy')
     parser_pull.set_defaults(command = pull)
 
 

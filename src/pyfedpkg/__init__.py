@@ -311,6 +311,33 @@ def _srpmdetails(srpm):
 
     return((name, files, uploadfiles))
 
+def add_tag(tagname, force=False, message=None, file=None):
+    """Add a git tag to the repository
+
+    Takes a tagname
+
+    Optionally can force the tag, include a message,
+    or reference a message file.
+
+    Runs the tag command and returns nothing
+
+    """
+
+    cmd = ['git', 'tag']
+    cmd.extend(['-a'])
+    # force tag creation, if tag already exists
+    if force:
+        cmd.extend(['-f'])
+    # Description for the tag
+    if message:
+        cmd.extend(['-m', message])
+    elif file:
+        cmd.extend(['-F', os.path.abspath(file)])
+    cmd.append(tagname)
+    # make it so
+    _run_command(cmd)
+    log.info('Tag \'%s\' was created' % tagname)
+
 def clean(dry=False, useignore=True):
     """Clean a module checkout of untracked files.
 
@@ -331,7 +358,7 @@ def clean(dry=False, useignore=True):
     # Run it!
     _run_command(cmd)
     return
-
+ 
 def clone(module, user, path=None, branch=None, bare_dir=None):
     """Clone a repo, optionally check out a specific branch.
 
@@ -479,6 +506,43 @@ def commit(path=None, message=None, file=None, files=[]):
     _run_command(cmd, cwd=path)
     return
 
+def delete_tag(tagname, path=None):
+    """Delete a git tag from the repository found at optional path"""
+
+    if not path:
+        path = os.getcwd()
+    cmd = ['git', 'tag', '-d', tagname]
+    _run_command(cmd, cwd=path)
+    log.info ('Tag %s was deleted' % tagname)
+
+def diff(path, cached=False, files=[]):
+    """Excute a git diff
+
+    optionally diff the cached or staged changes
+
+    Takes an optional list of files to diff relative to the module base
+    directory
+
+    Logs the output and returns nothing
+
+    """
+
+    # Things work better if we're in our module directory
+    oldpath = os.getcwd()
+    os.chdir(path)
+    # build up the command
+    cmd = ['git', 'diff']
+    if cached:
+        cmd.append('--cached')
+    if files:
+        cmd.extend(files)
+
+    # Run it!
+    _run_command(cmd)
+    # popd
+    os.chdir(oldpath)
+    return
+
 def get_latest_commit(module):
     """Discover the latest commit has for a given module and return it"""
 
@@ -582,6 +646,20 @@ def import_srpm(srpm, path=None):
     os.chdir(oldpath)
     return(uploadfiles)
 
+def list_tag(tagname=None):
+    """Create a list of all tags in the repository which match a given tagname.
+
+    if tagname == '*' all tags will been shown.
+
+    """
+
+    cmd = ['git', 'tag']
+    cmd.extend(['-l'])
+    if tagname != '*':
+        cmd.extend([tagname])
+    # make it so
+    _run_command(cmd)
+
 def new(path=None):
     """Return changes in a repo since the last tag"""
 
@@ -597,6 +675,24 @@ def new(path=None):
     # Now get the diff
     log.debug('Diffing from tag %s' % tag)
     return repo.git.diff('-M', tag)
+
+def pull(path=None):
+    """Pull changes from the main repository using optional path"""
+
+    if not path:
+        path = os.getcwd()
+    cmd = ['git', 'pull']
+    _run_command(cmd, cwd=path)
+    return
+ 
+def push(path=None):
+    """Push changes to the main repository using optional path"""
+
+    if not path:
+        path = os.getcwd()
+    cmd = ['git', 'push']
+    _run_command(cmd, cwd=path)
+    return
 
 def sources(path, outdir=None):
     """Download source files"""
@@ -799,7 +895,6 @@ class Lookaside(object):
             raise FedpkgError('Lookaside failure.  Check your cert.')
         curl.close()
 
-
 class GitIgnore(object):
     """ Smaller wrapper for managing a .gitignore file and it's entries. """
 
@@ -966,7 +1061,7 @@ class PackageModule:
         self.hashtype = 'sha256'
         if self.branch.startswith('el5') or self.branch.startswith('el4'):
             self.hashtype = 'md5'
-
+ 
     def build(self, skip_tag=False, scratch=False, background=False,
               url=None, chain=None):
         """Initiate a build of the module.  Available options are:
@@ -1139,35 +1234,6 @@ class PackageModule:
         _run_command(cmd, shell=True)
         return
 
-    def diff(self, cached=False, files=[]):
-        """Excute a git diff
-
-        optionally diff the cached or staged changes
-
-        Takes an optional list of files to diff reletive to the module base
-        directory
-
-        Logs the output and returns nothing
-
-        """
-
-        # Things work better if we're in our module directory
-        oldpath = os.getcwd()
-        os.chdir(self.path)
-
-        # build up the command
-        cmd = ['git', 'diff']
-        if cached:
-            cmd.append('--cached')
-        if files:
-            cmd.extend(files)
-
-        # Run it!
-        _run_command(cmd)
-        # popd
-        os.chdir(oldpath)
-        return
-
     def getver(self):
         """Return the version-release of a package module."""
 
@@ -1185,6 +1251,10 @@ class PackageModule:
             raise FedpkgError('Could not get version of %s: %s' % (self.module, e))
         # Get just the output, then split it by space, grab the first
         return output[0].split()[0]
+
+    def getnvr(self):
+        """Return Name-Version-Release of a package"""
+        return self.nvr
 
     def getrel(self):
         """Return the version-release of a package module."""
@@ -1207,13 +1277,20 @@ class PackageModule:
     def gimmespec(self):
         """Return the name of a specfile within a package module"""
     
+        deadpackage = False
+
         # Get a list of files in the path we're looking at
         files = os.listdir(self.path)
         # Search the files for the first one that ends with ".spec"
         for f in files:
             if f.endswith('.spec'):
                 return f
-        raise FedpkgError('No spec file found.')
+            if f == 'dead.package':
+                deadpackage = True
+        if deadpackage:
+            raise FedpkgError('No spec file found. This package is retired')
+        else:
+            raise FedpkgError('No spec file found. Please import a new package')
 
     def giturl(self):
         """Return the git url that would be used for building"""
@@ -1328,7 +1405,7 @@ class PackageModule:
         _run_command(cmd, shell=True)
         return
 
-    def lint(self):
+    def lint(self, info=False):
         """Run rpmlint over a built srpm
 
         Log the output and returns nothing
@@ -1347,7 +1424,10 @@ class PackageModule:
             rpms.extend([os.path.join(self.path, arch, file) for file in
                          os.listdir(os.path.join(self.path, arch))
                          if file.endswith('.rpm')])
-        cmd = ['rpmlint', os.path.join(self.path, srpm)]
+        cmd = ['rpmlint']
+        if info:
+            cmd.extend(['-i'])
+        cmd.extend([os.path.join(self.path, srpm)])
         cmd.extend(rpms)
         # Run the command
         _run_command(cmd, shell=True)
@@ -1500,14 +1580,7 @@ class PackageModule:
         # Run the command
         _run_command(cmd, shell=True)
         return
-
-    def push(self):
-        """Push changes to the main repository"""
-
-        cmd = ['git', 'push']
-        _run_command(cmd)
-        return
-
+ 
     def srpm(self, hashtype=None):
         """Create an srpm using hashtype from content in the module
     

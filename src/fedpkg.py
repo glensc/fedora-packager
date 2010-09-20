@@ -440,11 +440,29 @@ def clone(args):
         sys.exit(1)
 
 def commit(args):
+    mymodule = None
+    if args.clog:
+        try:
+            mymodule = pyfedpkg.PackageModule(args.path)
+            mymodule.clog()
+        except pyfedpkg.FedpkgError, e:
+            log.error('coult not create clog: %s' % e)
+            sys.exit(1)
+        args.file = os.path.abspath(self.path.join(args.path, 'clog'))
     try:
         pyfedpkg.commit(args.path, args.message, args.file, args.files)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not commit: %s' % e)
         sys.exit(1)
+    if args.tag:
+        try:
+            if not mymodule:
+                mymodule = pyfedpkg.PackageModule(args.path)
+            tagname = mymodule.nvr()
+            pyfedpkg.add_tag(tagname, True, args.message, args.file)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Coult not create a tag: %s' % e)
+            sys.exit(1)
     if args.push:
         push(args)
 
@@ -464,8 +482,7 @@ def compile(args):
 
 def diff(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
-        return mymodule.diff(args.cached, args.files)
+        return pyfedpkg.diff(args.path, args.cached, args.files)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not diff: %s' % e)
         sys.exit(1)
@@ -528,7 +545,7 @@ def install(args):
 def lint(args):
     try:
         mymodule = pyfedpkg.PackageModule(args.path)
-        return mymodule.lint()
+        return mymodule.lint(info)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not run rpmlint: %s' % e)
         sys.exit(1)
@@ -598,10 +615,16 @@ def prep(args):
         log.error('Could not prep: %s' % e)
         sys.exit(1)
 
+def pull(args):
+    try:
+        pyfedpkg.pull(path=args.path)
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not push: %s' % e)
+        sys.exit(1)
+
 def push(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
-        mymodule.push()
+        pyfedpkg.push(path=args.path)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not push: %s' % e)
         sys.exit(1)
@@ -651,6 +674,35 @@ def switch_branch(args):
         locals[locals.index('  %s  ' % local_branch)] = '* %s' % local_branch
         print('Locals:\n%s\nRemotes:\n  %s' %
               ('\n'.join(locals), '\n  '.join(remotes)))
+
+def tag(args):
+    if args.list:
+        try:
+            pyfedpkg.list_tag(args.tag)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Could not create a list of the tag: %s' % e)
+            sys.exit(1)
+    elif args.delete:
+        try:
+            pyfedpkg.delete_tag(args.tag, args.path)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Coult not delete tag: %s' % e)
+            sys.exit(1)
+    else:
+        filename = args.file
+        tagname = args.tag
+        try:
+            if not tagname or args.clog:
+                mymodule = pyfedpkg.PackageModule(args.path)
+                if not tagname:
+                    tagname = mymodule.nvr
+                if clog:
+                    mymodule.clog()
+                    filename = 'clog'
+            pyfedpkg.add_tag(tagname, args.force, args.message, filename)
+        except pyfedpkg.FedpkgError, e:
+            log.error('Coult not create a tag: %s' % e)
+            sys.exit(1)
 
 def tagrequest(args):
     # not implimented
@@ -871,10 +923,17 @@ packages will be built sequentially.
                                       conflict_handler = 'resolve',
                                       help = 'Alias for clone')
     parser_co.set_defaults(command = clone)
-
     # commit stuff
     parser_commit = subparsers.add_parser('commit',
                                           help = 'Commit changes')
+    parser_commit.add_argument('-c', '--clog',
+                               default = False,
+                               action = 'store_true',
+                               help = 'Generate the commit message from the %Changelog section')
+    parser_commit.add_argument('-t', '--tag',
+                               default = False,
+                               action = 'store_true',
+                               help = 'Create a tag for this commit')
     parser_commit.add_argument('-m', '--message',
                                default = None,
                                help = 'Use the given <msg> as the commit message')
@@ -955,6 +1014,10 @@ packages will be built sequentially.
     # rpmlint target
     parser_lint = subparsers.add_parser('lint',
                             help = 'Run rpmlint against local build output')
+    parser_lint.add_argument('--info', '-i',
+                             default = False,
+                             action = 'store_true',
+                             help = 'Display explanations for reported messages')
     parser_lint.set_defaults(command = lint)
 
     # Build locally
@@ -996,6 +1059,12 @@ packages will be built sequentially.
     parser_prep.add_argument('--arch', help = 'Prep for a specific arch')
     parser_prep.set_defaults(command = prep)
 
+    # Pull stuff
+    parser_pull = subparsers.add_parser('pull',
+                                help = 'Pull changes from remote repository and update working copy')
+    parser_pull.set_defaults(command = pull)
+
+
     # Push stuff
     parser_push = subparsers.add_parser('push',
                                 help = 'Push changes to remote repository')
@@ -1035,6 +1104,37 @@ packages will be built sequentially.
                                 help = 'List both remote-tracking branches and local branches',
                                 action = 'store_true')
     parser_switchbranch.set_defaults(command = switch_branch)
+
+    # tag stuff
+    parser_tag = subparsers.add_parser('tag',
+                                       help = 'Management of git tags')
+    parser_tag.add_argument('-f', '--force',
+                            default = False,
+                            action = 'store_true',
+                            help = 'Force the creation of the tag')
+    parser_tag.add_argument('-m', '--message',
+                               default = None,
+                               help = 'Use the given <msg> as the tag message')
+    parser_tag.add_argument('-c', '--clog',
+                            default = False,
+                            action = 'store_true',
+                            help = 'Generate the tag message from the spec changelog section')
+    parser_tag.add_argument('-F', '--file',
+                            default = None,
+                            help = 'Take the tag message from the given file')
+    parser_tag.add_argument('-l', '--list',
+                            default = False,
+                            action = 'store_true',
+                            help = 'List all tags with a given pattern, or all if not pattern is given')
+    parser_tag.add_argument('-d', '--delete',
+                            default = False,
+                            action = 'store_true',
+                            help = 'Delete a tag')
+    parser_tag.add_argument('tag',
+                            nargs = '?',
+                            default = None,
+                            help = 'Name of the tag')
+    parser_tag.set_defaults(command = tag)
 
     # Create a releng tag request
     parser_tagrequest = subparsers.add_parser('tag-request',

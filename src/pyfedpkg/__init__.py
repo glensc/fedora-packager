@@ -676,18 +676,22 @@ def new(path=None):
     log.debug('Diffing from tag %s' % tag)
     return repo.git.diff('-M', tag)
 
-def pull():
-    """Pull changes from the main repository"""
+def pull(path=None):
+    """Pull changes from the main repository using optional path"""
 
+    if not path:
+        path = os.getcwd()
     cmd = ['git', 'pull']
-    _run_command(cmd)
+    _run_command(cmd, cwd=path)
     return
  
-def push():
-    """Push changes to the main repository"""
+def push(path=None):
+    """Push changes to the main repository using optional path"""
 
+    if not path:
+        path = os.getcwd()
     cmd = ['git', 'push']
-    _run_command(cmd)
+    _run_command(cmd, cwd=path)
     return
 
 def sources(path, outdir=None):

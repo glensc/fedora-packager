@@ -620,14 +620,14 @@ def prep(args):
 
 def pull(args):
     try:
-        pyfedpkg.pull()
+        pyfedpkg.pull(path=args.path)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not push: %s' % e)
         sys.exit(1)
 
 def push(args):
     try:
-        pyfedpkg.push()
+        pyfedpkg.push(path=args.path)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not push: %s' % e)
         sys.exit(1)

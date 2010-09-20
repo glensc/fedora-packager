@@ -698,7 +698,7 @@ def tag(args):
             if not tagname or args.clog:
                 mymodule = pyfedpkg.PackageModule(args.path)
                 if not tagname:
-                    tagname = mymodule.getnvr()
+                    tagname = mymodule.nvr
                 if clog:
                     mymodule.clog()
                     filename = 'clog'

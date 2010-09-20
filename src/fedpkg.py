@@ -459,7 +459,6 @@ def commit(args):
             if not mymodule:
                 mymodule = pyfedpkg.PackageModule(args.path)
             tagname = mymodule.nvr()
-            filename = args.file
             pyfedpkg.add_tag(tagname, True, args.message, args.file)
         except pyfedpkg.FedpkgError, e:
             log.error('Coult not create a tag: %s' % e)

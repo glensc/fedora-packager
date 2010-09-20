@@ -312,7 +312,17 @@ def _srpmdetails(srpm):
     return((name, files, uploadfiles))
 
 def add_tag(tagname, force=False, message=None, file=None):
-    """Add a git tag to the repository"""
+    """Add a git tag to the repository
+
+    Takes a tagname
+
+    Optionally can force the tag, include a message,
+    or reference a message file.
+
+    Runs the tag command and returns nothing
+
+    """
+
     cmd = ['git', 'tag']
     cmd.extend(['-a'])
     # force tag creation, if tag already exists
@@ -497,8 +507,7 @@ def commit(path=None, message=None, file=None, files=[]):
     return
 
 def delete_tag(tagname=None):
-    """Delete a git tag from the repository
-    """
+    """Delete a git tag from the repository"""
 
     if not tagname:
         raise fedpkgError('Please specified a tagname')
@@ -640,9 +649,12 @@ def import_srpm(srpm, path=None):
     return(uploadfiles)
 
 def list_tag(tagname=None):
-    """Create a list of all tags in the repository which mathe a given pattern.
-       if list == '*' all tags will been shown.
+    """Create a list of all tags in the repository which match a given tagname.
+
+    if tagname == '*' all tags will been shown.
+
     """
+
     cmd = ['git', 'tag']
     cmd.extend(['-l'])
     if not tagname == '*':

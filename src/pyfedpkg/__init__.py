@@ -326,7 +326,7 @@ def add_tag(tagname, force=False, message=None, file=None):
     cmd.append(tagname)
     # make it so
     _run_command(cmd)
-    log.info ('Tag \'%s\' was created' % tagname)        
+    log.info('Tag \'%s\' was created' % tagname)
 
 def clean(dry=False, useignore=True):
     """Clean a module checkout of untracked files.

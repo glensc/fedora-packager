@@ -687,7 +687,7 @@ def tag(args):
             sys.exit(1)
     elif args.delete:
         try:
-            pyfedpkg.delete_tag(args.tag)
+            pyfedpkg.delete_tag(args.tag, args.path)
         except pyfedpkg.FedpkgError, e:
             log.error('Coult not delete tag: %s' % e)
             sys.exit(1)
@@ -1110,7 +1110,7 @@ packages will be built sequentially.
 
     # tag stuff
     parser_tag = subparsers.add_parser('tag',
-                                       help = 'Managementz of git tags')
+                                       help = 'Management of git tags')
     parser_tag.add_argument('-f', '--force',
                             default = False,
                             action = 'store_true',
@@ -1121,7 +1121,7 @@ packages will be built sequentially.
     parser_tag.add_argument('-c', '--clog',
                             default = False,
                             action = 'store_true',
-                            help = 'Generate the tag message from the %Changelog section')
+                            help = 'Generate the tag message from the spec changelog section')
     parser_tag.add_argument('-F', '--file',
                             default = None,
                             help = 'Take the tag message from the given file')

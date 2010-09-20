@@ -506,16 +506,14 @@ def commit(path=None, message=None, file=None, files=[]):
     _run_command(cmd, cwd=path)
     return
 
-def delete_tag(tagname=None):
-    """Delete a git tag from the repository"""
+def delete_tag(tagname, path=None):
+    """Delete a git tag from the repository found at optional path"""
 
-    if not tagname:
-        raise fedpkgError('Please specified a tagname')
-    cmd = ['git', 'tag']
-    cmd.extend(['-d'])
-    cmd.extend(tagname)
-    _run_command(cmd)
-    log.info ('Tag %s was deleted' % ', '.join(delete))
+    if not path:
+        path = os.getcwd()
+    cmd = ['git', 'tag', '-d', tagname]
+    _run_command(cmd, cwd=path)
+    log.info ('Tag %s was deleted' % tagname)
 
 def diff(path, cached=False, files=[]):
     """Excute a git diff
@@ -657,7 +655,7 @@ def list_tag(tagname=None):
 
     cmd = ['git', 'tag']
     cmd.extend(['-l'])
-    if not tagname == '*':
+    if tagname != '*':
         cmd.extend([tagname])
     # make it so
     _run_command(cmd)

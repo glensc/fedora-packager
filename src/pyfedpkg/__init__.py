@@ -696,6 +696,28 @@ def push(path=None):
     _run_command(cmd, cwd=path)
     return
 
+def retire(path, message=None):
+    """Retire a Fedora package"""
+
+    cmd = ['git', 'rm', '-rf', path]
+    _run_command(cmd, cwd=path)
+
+    if message:
+        msg = message
+    else:
+        msg = 'Package is retired' 
+
+    fd = open(os.path.join(path, 'dead.package'), 'w')
+    fd.write(msg)
+    fd.close()
+
+    cmd = ['git', 'add', os.path.join(path, 'dead.package')]
+    _run_command(cmd, cwd=path)
+
+    commit (path, msg)
+
+    return
+
 def sources(path, outdir=None):
     """Download source files"""
 

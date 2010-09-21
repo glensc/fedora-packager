@@ -630,6 +630,15 @@ def push(args):
         log.error('Could not push: %s' % e)
         sys.exit(1)
 
+def retire(args):
+    try:
+        pyfedpkg.retire(args.path, args.msg)
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not retire package: %s' % e)
+        sys.exit(1)
+    if args.push:
+        push()
+
 def scratchbuild(args):
     # A scratch build is just a build with --scratch
     args.scratch = True
@@ -1080,6 +1089,18 @@ packages will be built sequentially.
     parser_push = subparsers.add_parser('push',
                                 help = 'Push changes to remote repository')
     parser_push.set_defaults(command = push)
+
+    # retire stuff
+    parser_retire = subparsers.add_parser('retire',
+                                          help = 'Retire a package')
+    parser_retire.add_argument('-p', '--push',
+                               default = False,
+                               action = 'store_true',
+                               help = 'Push changes to remote repository')
+    parser_retire.add_argument('msg',
+                               nargs = '?',
+                               help = 'Message for retiring the package')
+    parser_retire.set_defaults(command = retire)
 
     # scratch build
     parser_scratchbuild = subparsers.add_parser('scratch-build',

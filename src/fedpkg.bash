@@ -36,8 +36,8 @@ _fedpkg()
     local options="--help -v -q"
     local options_value="--user --path"
     local commands="build chain-build ci clean clog clone co commit compile diff gimmespec giturl help \
-    import install lint local mockbuild new new-sources patch prep pull push scratch-build sources srpm \
-    switch-branch tag tag-request unused-patches update upload verrel"
+    import install lint local mockbuild new new-sources patch prep pull push retire scratch-build sources \
+    srpm switch-branch tag tag-request unused-patches update upload verrel"
 
     # parse main options and get command
 
@@ -164,6 +164,10 @@ _fedpkg()
 	    ;;
 	tag-request)
 	    options_string="--desc --build"
+	    ;;
+	retire)
+	    options="--push"
+	    after_more=true
 	    ;;
         srpm)
             options="--md5"

@@ -15,6 +15,7 @@ import pyfedpkg
 import fedora_cert
 import os
 import sys
+import getpass
 import logging
 import koji
 import xmlrpclib
@@ -705,8 +706,18 @@ def tag(args):
             sys.exit(1)
 
 def tagrequest(args):
-    # not implimented
-    log.warning('Not implimented yet, got %s' % args)
+    user = getuser(args.user)
+    passwd = getpass.getpass('Password for %s: ' % user)
+
+    if not args.desc:
+        args.desc = raw_input('\nAdd a description to your request: ')
+
+    try:
+        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule.new_ticket(user, passwd, args.desc, args.build)
+    except pyfedpkg.FedpkgError, e:
+        print('Could not request a tag release: %s' % e)
+        sys.exit(1)
 
 def unusedfedpatches(args):
     # not implimented; not planned
@@ -1138,7 +1149,9 @@ packages will be built sequentially.
 
     # Create a releng tag request
     parser_tagrequest = subparsers.add_parser('tag-request',
-                            help = 'Submit last build as a releng tag request')
+                            help = 'Submit current build nvr as a releng tag request')
+    parser_tagrequest.add_argument('--desc', help="Description of tag request")
+    parser_tagrequest.add_argument('--build', help="Override the build n-v-r")
     parser_tagrequest.set_defaults(command = tagrequest)
 
     # Show unused Fedora patches; not planned

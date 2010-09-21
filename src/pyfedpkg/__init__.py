@@ -28,6 +28,7 @@ import stat
 import StringIO
 import OpenSSL
 import fnmatch
+import offtrac
 
 
 # Define some global variables, put them here to make it easy to change
@@ -36,6 +37,7 @@ LOOKASIDEHASH = 'md5'
 LOOKASIDE_CGI = 'https://pkgs.fedoraproject.org/repo/pkgs/upload.cgi'
 GITBASEURL = 'ssh://%(user)s@pkgs.fedoraproject.org/%(module)s'
 ANONGITURL = 'git://pkgs.fedoraproject.org/%(module)s'
+TRACBASEURL = 'https://%(user)s:%(password)s@fedorahosted.org/rel-eng/login/xmlrpc'
 UPLOADEXTS = ['tar', 'gz', 'bz2', 'lzma', 'xz', 'Z', 'zip', 'tff', 'bin',
               'tbz', 'tbz2', 'tlz', 'txz', 'pdf', 'rpm', 'jar', 'war', 'db',
               'cpio', 'jisp', 'egg', 'gem']
@@ -1022,17 +1024,20 @@ class PackageModule:
             self.dist = 'fc%s' % self.distval
             self.target = 'dist-f%s-updates-candidate' % self.distval
             self.mockconfig = 'fedora-%s-%s' % (self.distval, self.localarch)
+            self.override = 'dist-f%s-override' % self.distval
         elif self.branch.startswith('el'):
             self.distval = self.branch.split('el')[1]
             self.distvar = 'rhel'
             self.dist = 'el%s' % self.distval
             self.target = 'dist-%sE-epel-testing-candidate' % self.distval
             self.mockconfig = 'epel-%s-%s' % (self.distval, self.localarch)
+            self.override = 'dist-%sE-epel-override' % self.distval
         elif self.branch.startswith('olpc'):
             self.distval = self.branch.split('olpc')[1]
             self.distvar = 'olpc'
             self.dist = 'olpc%s' % self.distval
             self.target = 'dist-olpc%s' % self.distval
+            self.override = 'dist-olpc%s-override' % self.distval
         # If we don't match one of the above, assume master or a branch of
         # master
         else:
@@ -1042,6 +1047,7 @@ class PackageModule:
             self.dist = 'fc%s' % self.distval
             self.target = 'dist-rawhide'
             self.mockconfig = 'fedora-devel-%s' % self.localarch
+            self.override = None
         self.rpmdefines = ["--define '_sourcedir %s'" % path,
                            "--define '_specdir %s'" % path,
                            "--define '_builddir %s'" % path,
@@ -1490,6 +1496,62 @@ class PackageModule:
         # Run the command
         _run_command(cmd)
         return
+
+    def new_ticket(self, username, passwd, desc, build=None):
+        """Open a new ticket on Rel-Eng trac instance.
+
+        Get ticket component and assignee from current branch
+
+        Create a new task ticket using username/password/desc
+
+        Discover build nvr from module or optional build argument
+
+        Return ticket number on success
+
+        """
+
+        override = self.override
+        if not override:
+            raise FedpkgError('Override tag is not required for %s' %
+                              self.branch)
+
+        uri = TRACBASEURL % {'user': username, 'password': passwd}
+        self.trac = offtrac.TracServer(uri)
+
+        # Set trac's component and assignee from related distvar
+        if self.distvar == 'fedora':
+            component = 'koji'
+            #owner = 'rel-eng@lists.fedoraproject.org'
+        elif self.distvar == 'rhel':
+            component = 'epel'
+            #owner = 'releng-epel@lists.fedoraproject.org'
+
+        # Raise if people request a tag against something that self updates
+        self.init_koji(username)
+        build_target = self.kojisession.getBuildTarget(self.target)
+        if not build_target:
+            raise FedpkgError('Unknown build target: %s' % self.target)
+        dest_tag = self.kojisession.getTag(build_target['dest_tag_name'])
+        ancestors = self.kojisession.getFullInheritance(build_target['build_tag'])
+        if dest_tag['id'] in [build_target['build_tag']] + \
+                                  [ancestor['parent_id'] for
+                                   ancestor in ancestors]:
+            raise FedpkgError('Override tag is not required for %s' %
+                              self.branch)
+
+        if not build:
+            build = self.nvr
+
+        summary = 'Tag request %s for %s' % (build, override)
+        type = 'task'
+        try:
+            ticket = self.trac.create_ticket(summary, desc, component=component,
+                                             notify=True)
+        except subprocess.CalledProcessError, e:
+            raise FedpkgError('Could not request tag %s: %s' % (build, e))
+
+        log.debug('Task %s created' % ticket)
+        return ticket
 
     def upload(self, files, replace=False):
         """Upload source file(s) in the lookaside cache

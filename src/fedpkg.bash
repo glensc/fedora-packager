@@ -87,14 +87,14 @@ _fedpkg()
     # parse command specific options
 
     local options=
-    local options_target= options_arches= options_branch= options_string= options_file= options_srpm=
+    local options_target= options_arches= options_branch= options_string= options_file= options_dir= options_srpm=
     local after= after_more=
 
     case $command in
         help|clog|gimmespec|giturl|lint|mockbuild|new|push|unused-patches|update|verrel)
             ;;
         build)
-            options="--nowait --background --skip-tag --scratch --srpm"
+            options="--nowait --background --skip-tag --scratch"
             options_srpm="--srpm"
             options_target="--target"
             ;;
@@ -133,9 +133,9 @@ _fedpkg()
             options_branch="--branch"
             after="srpm"
             ;;
-	lint)
-	    options="--info"
-	    ;;
+        lint)
+            options="--info"
+            ;;
         local)
             options="--md5"
             options_arch="--arch"
@@ -148,7 +148,7 @@ _fedpkg()
             options_arch="--arch"
             ;;
         scratch-build)
-            options="--nowait --background --srpm"
+            options="--nowait --background"
             options_target="--target"
             options_arches="--arches"
             options_srpm="--srpm"
@@ -156,15 +156,15 @@ _fedpkg()
         sources)
             options_dir="--outdir"
             ;;
-	tag)
-	    options="--clog --force --list --delete"
-	    options_string="--message"
-	    options_file="--file"
-	    after_more=true
-	    ;;
-	tag-request)
-	    options_string="--desc --build"
-	    ;;
+        tag)
+            options="--clog --force --list --delete"
+            options_string="--message"
+            options_file="--file"
+            after_more=true
+            ;;
+        tag-request)
+            options_string="--desc --build"
+            ;;
         srpm)
             options="--md5"
             ;;
@@ -179,7 +179,7 @@ _fedpkg()
     esac
 
     local all_options="--help $options"
-    local all_options_value="$options_target $options_arches $options_branch $options_string $options_file $options_dir"
+    local all_options_value="$options_target $options_arches $options_branch $options_string $options_file $options_dir $options_srpm"
 
     # count non-option parametrs
 

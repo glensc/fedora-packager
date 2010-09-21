@@ -158,8 +158,8 @@ _fedpkg()
             ;;
 	tag)
 	    options="--clog --force --list --delete"
-	    options_string="--message -m"
-	    options_file="--file -F"
+	    options_string="--message"
+	    options_file="--file"
 	    after_more=true
 	    ;;
         srpm)

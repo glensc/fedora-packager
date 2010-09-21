@@ -91,7 +91,7 @@ _fedpkg()
     local after= after_more=
 
     case $command in
-        help|clog|gimmespec|giturl|lint|mockbuild|new|push|tag-request|unused-patches|update|verrel)
+        help|clog|gimmespec|giturl|lint|mockbuild|new|push|unused-patches|update|verrel)
             ;;
         build)
             options="--nowait --background --skip-tag --scratch --srpm"
@@ -161,6 +161,9 @@ _fedpkg()
 	    options_string="--message"
 	    options_file="--file"
 	    after_more=true
+	    ;;
+	tag-request)
+	    options_string="--desc --build"
 	    ;;
         srpm)
             options="--md5"

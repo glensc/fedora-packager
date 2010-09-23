@@ -697,15 +697,19 @@ def push(path=None):
     return
 
 def retire(path, message=None):
-    """Retire a Fedora package"""
+    """Delete all tracked files and commit a new dead.package file
+
+    Use optional message in commit.
+
+    Runs the commands and returns nothing
+
+    """
 
     cmd = ['git', 'rm', '-rf', path]
     _run_command(cmd, cwd=path)
 
-    if message:
-        msg = message
-    else:
-        msg = 'Package is retired' 
+    if not message:
+        msg = 'Package is retired'
 
     fd = open(os.path.join(path, 'dead.package'), 'w')
     fd.write(msg)
@@ -714,7 +718,7 @@ def retire(path, message=None):
     cmd = ['git', 'add', os.path.join(path, 'dead.package')]
     _run_command(cmd, cwd=path)
 
-    commit (path, msg)
+    commit(path, msg)
 
     return
 

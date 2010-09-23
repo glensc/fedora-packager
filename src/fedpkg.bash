@@ -87,14 +87,14 @@ _fedpkg()
     # parse command specific options
 
     local options=
-    local options_target= options_arches= options_branch= options_string= options_file= options_srpm=
+    local options_target= options_arches= options_branch= options_string= options_file= options_dir= options_srpm=
     local after= after_more=
 
     case $command in
         help|clog|gimmespec|giturl|lint|mockbuild|new|push|unused-patches|update|verrel)
             ;;
         build)
-            options="--nowait --background --skip-tag --scratch --srpm"
+            options="--nowait --background --skip-tag --scratch"
             options_srpm="--srpm"
             options_target="--target"
             ;;
@@ -152,7 +152,7 @@ _fedpkg()
             after_more=true
             ;;
         scratch-build)
-            options="--nowait --background --srpm"
+            options="--nowait --background"
             options_target="--target"
             options_arches="--arches"
             options_srpm="--srpm"
@@ -183,7 +183,7 @@ _fedpkg()
     esac
 
     local all_options="--help $options"
-    local all_options_value="$options_target $options_arches $options_branch $options_string $options_file $options_dir"
+    local all_options_value="$options_target $options_arches $options_branch $options_string $options_file $options_dir $options_srpm"
 
     # count non-option parametrs
 

@@ -133,9 +133,9 @@ _fedpkg()
             options_branch="--branch"
             after="srpm"
             ;;
-	lint)
-	    options="--info"
-	    ;;
+        lint)
+            options="--info"
+            ;;
         local)
             options="--md5"
             options_arch="--arch"
@@ -147,10 +147,10 @@ _fedpkg()
         prep)
             options_arch="--arch"
             ;;
-	retire)
-	    options="--push"
-	    after_more=true
-	    ;;
+        retire)
+            options="--push"
+            after_more=true
+            ;;
         scratch-build)
             options="--nowait --background --srpm"
             options_target="--target"
@@ -167,15 +167,15 @@ _fedpkg()
             options="--list"
             after="branch"
             ;;
-	tag)
-	    options="--clog --force --list --delete"
-	    options_string="--message"
-	    options_file="--file"
-	    after_more=true
-	    ;;
-	tag-request)
-	    options_string="--desc --build"
-	    ;;
+        tag)
+            options="--clog --force --list --delete"
+            options_string="--message"
+            options_file="--file"
+            after_more=true
+            ;;
+        tag-request)
+            options_string="--desc --build"
+            ;;
         upload|new-sources)
             after="file"
             after_more=true

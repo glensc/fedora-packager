@@ -11,13 +11,17 @@ bin_SCRIPTS = fedora-cvs \
 	arm-koji \
 	ppc-koji
 
-CLEANFILES = $(bin_SCRIPTS)
+sbin_SCRIPTS = fedora-burn-yubikey
+
+CLEANFILES = $(bin_SCRIPTS) $(sbin_SCRIPTS)
+
 EXTRA_DIST = src/fedora-cvs.py \
 	src/fedora-packager-setup.py \
 	src/fedoradev-pkgowners \
 	src/fedora-cert.py \
 	src/fedora-getsvn \
 	src/fedora-hosted.py \
+	src/fedora-burn-yubikey.py \
 	src/rpmbuild-md5 \
 	src/fedpkg.py \
 	src/secondary-koji \
@@ -46,6 +50,10 @@ fedora-getsvn: $(srcdir)/src/fedora-getsvn
 fedora-hosted: $(srcdir)/src/fedora-hosted.py
 	rm -f fedora-hosted
 	install -p -m 755 -T $(srcdir)/src/fedora-hosted.py fedora-hosted
+
+fedora-burn-yubikey: $(srcdir)/src/fedora-burn-yubikey.py
+	rm -f fedora-burn-yubikey
+	install -p -m 755 -T $(srcdir)/src/fedora-burn-yubikey.py fedora-burn-yubikey
 
 rpmbuild-md5: $(srcdir)/src/rpmbuild-md5
 	rm -f rpmbuild-md5

@@ -1,5 +1,14 @@
 #!/usr/bin/python
 
+# Copyright (C) 2010 Red Hat Inc.
+# Author: Mike McGrath <mmcgrath@redhat.com>
+# 
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
+# the full text of the license.
+
 # ykpersonalize -ofixed=ccccccccccci -afcaa0c5bf2e83ec040e4aeb7f8565293 -ouid=1e7f1da7d6d1
 from fedora.client import AccountSystem, AuthError
 from getpass import getpass, getuser

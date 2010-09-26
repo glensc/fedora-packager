@@ -1284,10 +1284,6 @@ class PackageModule:
         # Get just the output, then split it by space, grab the first
         return output[0].split()[0]
 
-    def getnvr(self):
-        """Return Name-Version-Release of a package"""
-        return self.nvr
-
     def getrel(self):
         """Return the version-release of a package module."""
 

@@ -449,7 +449,7 @@ def commit(args):
         except pyfedpkg.FedpkgError, e:
             log.error('coult not create clog: %s' % e)
             sys.exit(1)
-        args.file = os.path.abspath(self.path.join(args.path, 'clog'))
+        args.file = os.path.abspath(os.path.join(args.path, 'clog'))
     try:
         pyfedpkg.commit(args.path, args.message, args.file, args.files)
     except pyfedpkg.FedpkgError, e:

@@ -523,7 +523,7 @@ def import_srpm(args):
             sys.exit(1)
         # replace this system call with a proper diff target when it is
         # readys
-        mymodule.diff(cached=True)
+        pyfedpkg.diff(args.path, cached=True)
         print('--------------------------------------------')
         print("New content staged and new sources uploaded.")
         print("Commit if happy or revert with: git reset --hard HEAD")

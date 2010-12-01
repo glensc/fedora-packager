@@ -756,6 +756,7 @@ def sources(path, outdir=None):
         if os.path.exists(outfile):
             if _verify_file(outfile, csum, LOOKASIDEHASH):
                 continue
+        log.info("Downloading %s" % (file))
         url = '%s/%s/%s/%s/%s' % (LOOKASIDE, module, file.replace(' ', '%20'),
                                   csum, file.replace(' ', '%20'))
         # There is some code here for using pycurl, but for now,

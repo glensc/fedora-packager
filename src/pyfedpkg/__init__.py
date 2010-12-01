@@ -303,7 +303,8 @@ def _srpmdetails(srpm):
         raise FedpkgError(e)
     if error:
         raise FedpkgError('Error querying srpm:' % error)
-    contents = output.split()
+    # Doing a strip and split here as splitting on \n gets me an extra entry
+    contents = output.strip().split('\n')
     # Cycle through the stuff and sort correctly by its extension
     for file in contents:
         if file.rsplit('.')[-1] in UPLOADEXTS:
@@ -599,7 +600,7 @@ def import_srpm(srpm, path=None):
     # Need a way to make sure the srpm name matches the repo some how.
 
     # Get a list of files we're currently tracking
-    ourfiles = repo.git.ls_files().split()
+    ourfiles = repo.git.ls_files().split('\n')
     # Trim out sources and .gitignore
     try:
         ourfiles.remove('.gitignore')
@@ -744,7 +745,10 @@ def sources(path, outdir=None):
         outdir = path
     for archive in archives:
         try:
-            csum, file = archive.split()
+            # This strip / split is kind a ugly, but checksums shouldn't have
+            # two spaces in them.  sources file might need more structure in the
+            # future
+            csum, file = archive.strip().split('  ', 1)
         except ValueError:
             raise FedpkgError('Malformed sources file.')
         # See if we already have a valid copy downloaded
@@ -752,8 +756,8 @@ def sources(path, outdir=None):
         if os.path.exists(outfile):
             if _verify_file(outfile, csum, LOOKASIDEHASH):
                 continue
-        url = '%s/%s/%s/%s/%s' % (LOOKASIDE, module, file, csum,
-                                  file)
+        url = '%s/%s/%s/%s/%s' % (LOOKASIDE, module, file.replace(' ', '%20'),
+                                  csum, file.replace(' ', '%20'))
         # There is some code here for using pycurl, but for now,
         # just use subprocess
         #output = open(file, 'wb')
@@ -775,7 +779,7 @@ def sources(path, outdir=None):
         #output.close()
         # These options came from Makefile.common.
         # Probably need to support wget too
-        command = ['curl', '-H',  'Pragma:', '-O', '-R', '-S',  '--fail',
+        command = ['curl', '-H',  'Pragma:', '-o', file,  '-R', '-S',  '--fail',
                    '--show-error', url]
         _run_command(command)
         if not _verify_file(outfile, csum, LOOKASIDEHASH):

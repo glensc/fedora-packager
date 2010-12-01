@@ -487,7 +487,7 @@ def commit(path=None, message=None, file=None, files=[]):
 
     # First lets see if we got a message or we're on a real tty:
     if not sys.stdin.isatty():
-        if not message or not file:
+        if not message and not file:
             raise FedpkgError('Must have a commit message or be on a real tty.')
 
     # construct the git command

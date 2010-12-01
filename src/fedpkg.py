@@ -949,7 +949,7 @@ packages will be built sequentially.
     parser_commit.add_argument('-c', '--clog',
                                default = False,
                                action = 'store_true',
-                               help = 'Generate the commit message from the %Changelog section')
+                               help = 'Generate the commit message from the Changelog section')
     parser_commit.add_argument('-t', '--tag',
                                default = False,
                                action = 'store_true',

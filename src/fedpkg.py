@@ -753,7 +753,11 @@ def unusedpatches(args):
 def update(args):
     """Submit a new update to bodhi"""
     user = getuser(args.user)
-    mymodule = pyfedpkg.PackageModule(args.path)
+    try:
+        mymodule = pyfedpkg.PackageModule(args.path)
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not use module: %s' % e)
+        sys.exit(1)
     nvr = '%s-%s-%s' % (mymodule.module, mymodule.ver, mymodule.rel)
     template = """\
     [ %(nvr)s ]

@@ -738,8 +738,11 @@ def sources(path, outdir=None):
     if not spec:
         raise FedpkgError('%s is not a valid repo' % path)
     module = spec.split('.spec')[0]
-    archives = open(os.path.join(path, 'sources'),
-                    'r').readlines()
+    try:
+        archives = open(os.path.join(path, 'sources'),
+                        'r').readlines()
+    except IOError, e:
+        raise FedpkgError('%s is not a valid repo: %s' % (path, e))
     # Default to putting the files where the module is
     if not outdir:
         outdir = path

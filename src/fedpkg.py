@@ -338,6 +338,7 @@ def build(args):
         return
     # pass info off to our koji task watcher
     try:
+        mymodule.kojisession.logout()
         return _watch_koji_tasks(mymodule.kojisession, [task_id], quiet=args.q)
     except koji.AuthError, e:
         # We could get an auth error if credentials have expired

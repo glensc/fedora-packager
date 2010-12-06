@@ -430,6 +430,12 @@ def clone_with_dirs(module, user, path=None):
     top_git = git.Git(top_path)
     repo_path = os.path.join(top_path, 'fedpkg.git')
 
+    # construct the git url
+    if user:
+        giturl = GITBASEURL % {'user': user, 'module': module}
+    else:
+        giturl = ANONGITURL % {'module': module}
+
     # Create our new top directory
     try:
         os.mkdir(top_path)
@@ -455,8 +461,7 @@ def clone_with_dirs(module, user, path=None):
             # Set the origin correctly
             branch_path = os.path.join(top_path, branch.split('/master')[0])
             branch_git = git.Git(branch_path)
-            branch_git.config("--replace-all", "remote.origin.url",
-                    GITBASEURL % {'user': user, 'module': module})
+            branch_git.config("--replace-all", "remote.origin.url", giturl)
             branch_git.config('--add', 'push.default', 'tracking')
         except (git.GitCommandError, OSError), e:
             raise FedpkgError('Could not locally clone %s from %s: %s' %

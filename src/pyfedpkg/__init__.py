@@ -133,11 +133,10 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
     if sys.stdout.isatty():
         if pipe:
             log.debug('Running %s | %s directly on the tty' %
-                      (subprocess.list2cmdline(cmd),
-                      subprocess.list2cmdline(pipe)))
+                      (' '.join(cmd), ' '.join(pipe)))
         else:
             log.debug('Running %s directly on the tty' %
-                      subprocess.list2cmdline(cmd))
+                      ' '.join(cmd))
         try:
             if pipe:
                 # We're piping the stderr over too, which is probably a
@@ -166,11 +165,10 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
         # Ok, we're not on a live tty, so pipe and log.
         if pipe:
             log.debug('Running %s | %s and logging output' %
-                      (subprocess.list2cmdline(cmd),
-                       subprocess.list2cmdline(pipe)))
+                      (' '.join(cmd), ' '.join(pipe)))
         else:
             log.debug('Running %s and logging output' %
-                      subprocess.list2cmdline(cmd))
+                      ' '.join(cmd))
         try:
             if pipe:
                 proc1 = subprocess.Popen(command, env=environ,
@@ -195,7 +193,7 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
         log.info(output)
         if proc.returncode:
             raise FedpkgError('Command %s returned code %s with error: %s' %
-                              (subprocess.list2cmdline(cmd),
+                              (' '.join(cmd),
                                proc.returncode,
                                error))
     return
@@ -280,7 +278,7 @@ def _srpmdetails(srpm):
     # get the name
     cmd = ['rpm', '-qp', '--qf', '%{NAME}', srpm]
             # Run the command
-    log.debug('Running: %s' % subprocess.list2cmdline(cmd))
+    log.debug('Running: %s' % ' '.join(cmd))
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
@@ -295,7 +293,7 @@ def _srpmdetails(srpm):
     files = []
     uploadfiles = []
     cmd = ['rpm', '-qpl', srpm]
-    log.debug('Running: %s' % subprocess.list2cmdline(cmd))
+    log.debug('Running: %s' % ' '.join(cmd))
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
@@ -1206,7 +1204,7 @@ class PackageModule:
             log.debug('Building chain %s for %s with options %s and a ' \
                       'priority of %s' %
                       (chain, self.target, opts, priority))
-            log.debug(subprocess.list2cmdline(cmd))
+            log.debug(' '.join(cmd))
             task_id = self.kojisession.chainBuild(chain, self.target, opts,
                                                   priority=priority)
         # Now handle the normal build
@@ -1215,7 +1213,7 @@ class PackageModule:
             log.info('Building %s for %s' % (self.nvr, self.target))
             log.debug('Building %s for %s with options %s and a priority of %s' %
                       (url, self.target, opts, priority))
-            log.debug(subprocess.list2cmdline(cmd))
+            log.debug(' '.join(cmd))
             task_id = self.kojisession.build(url, self.target, opts,
                                              priority=priority)
         log.info('Created task: %s' % task_id)

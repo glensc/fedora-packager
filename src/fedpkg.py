@@ -846,7 +846,7 @@ def verrel(args):
         sys.exit(1)
     print('%s-%s-%s' % (mymodule.module, mymodule.ver, mymodule.rel))
 
-# THe main code goes here
+# The main code goes here
 if __name__ == '__main__':
     # Create the parser object
     parser = argparse.ArgumentParser(description = 'Fedora Packaging utility',

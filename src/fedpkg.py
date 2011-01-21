@@ -846,8 +846,10 @@ def verrel(args):
         sys.exit(1)
     print('%s-%s-%s' % (mymodule.module, mymodule.ver, mymodule.rel))
 
-# The main code goes here
-if __name__ == '__main__':
+
+def parse_cmdline(generate_manpage = False):
+    """Parse the command line"""
+
     # Create the parser object
     parser = argparse.ArgumentParser(description = 'Fedora Packaging utility',
                                      prog = 'fedpkg',
@@ -1228,7 +1230,12 @@ packages will be built sequentially.
     parser_verrel.set_defaults(command = verrel)
 
     # Parse the args
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+# The main code goes here
+if __name__ == '__main__':
+    args = parse_cmdline()
 
     # setup the logger -- This logger will take things of INFO or DEBUG and
     # log it to stdout.  Anything above that (WARN, ERROR, CRITICAL) will go

@@ -912,7 +912,7 @@ class Lookaside(object):
         try:
             curl.perform()
         except:
-            raise FedpkgError('Lookaside failure.  Check your cert.')
+            raise FedpkgError("Lookaside failure.  Please run 'fedora-cert -v' to verify your certificate")
         curl.close()
         output = buf.getvalue().strip()
 

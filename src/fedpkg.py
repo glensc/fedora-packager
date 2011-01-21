@@ -340,7 +340,7 @@ def build(args):
     try:
         mymodule.kojisession.logout()
         return _watch_koji_tasks(mymodule.kojisession, [task_id], quiet=args.q)
-    except koji.AuthError, e:
+    except (koji.AuthError, koji.ServerOffline), e:
         # We could get an auth error if credentials have expired
         log.error('Could not watch build: %s' % e)
         sys.exit(1)

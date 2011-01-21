@@ -95,6 +95,21 @@ def _hash_file(file, hashtype):
     input.close()
     return sum.hexdigest()
 
+def _name_from_spec(spec):
+    """Return the base package name from the spec."""
+
+    # get the name
+    cmd = ['rpm', '-q', '--qf', '%{NAME} ', '--specfile', spec]
+            # Run the command
+    log.debug('Running: %s' % ' '.join(cmd))
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        output, error = proc.communicate()
+    except OSError, e:
+        raise FedpkgError(e)
+    return output.split()[0]
+
 def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
     """Run the given command.
 
@@ -741,7 +756,7 @@ def sources(path, outdir=None):
             break
     if not spec:
         raise FedpkgError('%s is not a valid repo' % path)
-    module = spec.split('.spec')[0]
+    module = _name_from_spec(os.path.join(path, spec))
     try:
         archives = open(os.path.join(path, 'sources'),
                         'r').readlines()
@@ -1042,7 +1057,7 @@ class PackageModule:
         self.lookaside = LOOKASIDE
         self.lookasidehash = LOOKASIDEHASH
         self.spec = self.gimmespec()
-        self.module = self.spec.split('.spec')[0]
+        self.module = _name_from_spec(os.path.join(self.path, self.spec))
         self.localarch = self._getlocalarch()
         # Set the default mock config to None, not all branches have a config
         self.mockconfig = None

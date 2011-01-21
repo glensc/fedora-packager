@@ -579,6 +579,7 @@ def mockbuild(args):
     # Pick up any mockargs from the env
     mockargs = []
     try:
+        srpm(args)
         mockargs = os.environ['MOCKARGS'].split()
     except KeyError:
         # there were no args
@@ -1066,6 +1067,9 @@ packages will be built sequentially.
     # Build in mock
     parser_mockbuild = subparsers.add_parser('mockbuild',
                                         help = 'Local test build using mock')
+    # optionally define old style hashsums
+    parser_mockbuild.add_argument('--md5', action = 'store_true',
+                              help = 'Use md5 checksums (for older rpm hosts)')
     parser_mockbuild.set_defaults(command = mockbuild)
 
     # See what's different

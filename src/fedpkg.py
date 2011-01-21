@@ -1230,8 +1230,19 @@ packages will be built sequentially.
                                           ' name-version-release')
     parser_verrel.set_defaults(command = verrel)
 
-    # Parse the args
-    return parser.parse_args()
+    if not generate_manpage:
+        # Parse the args
+        return parser.parse_args()
+    else:
+        # Generate the man page
+
+        # Use the "as man_page" part to avoid overwriting the pyfedpkg
+        # namespace, which would break all usage of pyfedpkg.* outside
+        # of this else branch.
+        import pyfedpkg.man_page as man_page
+        man_page.generate(parser, subparsers)
+        sys.exit(0)
+        # no return possible
 
 
 # The main code goes here

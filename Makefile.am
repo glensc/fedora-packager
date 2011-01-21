@@ -79,7 +79,23 @@ ppc-koji: $(srcdir)/src/secondary-koji
 	rm -f ppc-koji
 	install -p -m 755 -T $(srcdir)/src/secondary-koji ppc-koji
 
-pyfedpkg_PYTHON = $(wildcard $(srcdir)/src/pyfedpkg/*.py)
+if HAVE_PYTHON
+CLEANFILES += fedpkg.1
+man1_MANS = fedpkg.1
+fedpkg.1: fedpkg
+	tmpfile="fedpkg.1.$$$$"; \
+	if env PYTHONPATH=$(srcdir)/src python -c 'import fedpkg; fedpkg.parse_cmdline(True)' > "$$tmpfile"; then \
+		mv -f "$$tmpfile" "$@"; \
+	else \
+		rm -f "$$tmpfile"; \
+		s="$$?"; \
+		echo "Error generating man page: $$s"; \
+		exit "$$s"; \
+	fi
+endif
+
+noinst_PYTHON = $(srcdir)/src/pyfedpkg/man_page.py
+pyfedpkg_PYTHON = $(filter-out $(noinst_PYTHON),$(wildcard $(srcdir)/src/pyfedpkg/*.py))
 fedora_cert_PYTHON = $(wildcard $(srcdir)/src/fedora_cert/*.py)
 
 fedora_certdir = $(pythondir)/fedora_cert

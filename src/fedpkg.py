@@ -556,7 +556,7 @@ def install(args):
 def lint(args):
     try:
         mymodule = pyfedpkg.PackageModule(args.path)
-        return mymodule.lint(info)
+        return mymodule.lint(args.info)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not run rpmlint: %s' % e)
         sys.exit(1)

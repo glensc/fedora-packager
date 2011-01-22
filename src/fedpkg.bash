@@ -140,9 +140,6 @@ _fedpkg()
             options="--md5"
             options_arch="--arch"
             ;;
-        mockbuild)
-            options="--md5"
-            ;;
         patch)
             options="--rediff"
             options_string="--suffix"

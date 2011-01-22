@@ -131,7 +131,7 @@ def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):
 
     """
 
-    # Process any environment vairables.
+    # Process any environment variables.
     environ = os.environ
     if env:
         for item in env.keys():

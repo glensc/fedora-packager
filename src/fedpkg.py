@@ -576,6 +576,12 @@ def local(args):
         sys.exit(1)
 
 def mockbuild(args):
+    try:
+        pyfedpkg.sources(args.path)
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not download sources: %s' % e)
+        sys.exit(1)
+
     # Pick up any mockargs from the env
     mockargs = []
     try:

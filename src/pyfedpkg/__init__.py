@@ -227,6 +227,15 @@ def _verify_file(file, hash, hashtype):
         return True
     return False
 
+def _newer(file1, file2):
+    """Compare the last modification time of the given files
+
+    Returns True is file1 is newer than file2
+
+    """
+
+    return os.path.getmtime(file1) > os.path.getmtime(file2)
+
 def _get_build_arches_from_srpm(srpm, arches):
     """Given the path to an srpm, determine the possible build arches
 
@@ -1527,21 +1536,14 @@ class PackageModule:
         """
 
         # Make sure we have an srpm to run on
-        srpm = os.path.join(self.path,
-                            "%s-%s-%s.src.rpm" % (self.module,
-                                                  self.ver, self.rel))
-        # See if we need to build the srpm
-        if not os.path.exists(srpm):
-            # This should figure out the hashtype to use
-            log.debug('No srpm found, building one.')
-            self.srpm()
+        self.srpm()
 
         # setup the command
         cmd = ['mock']
         cmd.extend(mockargs)
         cmd.extend(['-r', self.mockconfig, '--resultdir',
                     os.path.join(self.path, self.module, self.ver, self.rel),
-                    '--rebuild', srpm])
+                    '--rebuild', self.srpmname])
         # Run the command
         _run_command(cmd)
         return
@@ -1698,6 +1700,17 @@ class PackageModule:
         Requires sources already downloaded.
     
         """
+
+        self.srpmname = os.path.join(self.path,
+                            "%s-%s-%s.src.rpm" % (self.module,
+                                                  self.ver, self.rel))
+        # See if we need to build the srpm
+        if not os.path.exists(self.srpmname):
+            log.debug('No srpm found, building one.')
+        elif _newer(self.srpmname, self.spec):
+            log.debug('srpm is up-to-date, skip rebuilding')
+            # srpm is newer, don't redo it
+            return
 
         cmd = ['rpmbuild']
         cmd.extend(self.rpmdefines)

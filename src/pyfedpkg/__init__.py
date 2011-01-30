@@ -1023,10 +1023,7 @@ class PackageModule:
             localbranch = self.repo.active_branch.name
         except TypeError, e:
             raise FedpkgError('Repo in inconsistent state: %s' % e)
-        try:
-            merge = self.repo.git.config('--get', 'branch.%s.merge' % localbranch)
-        except git.errors.GitCommandError, e:
-            raise FedpkgError('Unable to find remote branch.  Use --dist')
+        merge = self.repo.git.config('--get', 'branch.%s.merge' % localbranch)
         return(merge.split('/')[2])
 
     def _findmasterbranch(self):

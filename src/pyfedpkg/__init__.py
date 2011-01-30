@@ -1053,7 +1053,11 @@ class PackageModule:
             if not self.anonkojisession:
                 self.init_koji()
             # We may not have Fedoras.  Find out what rawhide target does.
-            rawhidetarget = self.kojisession.getBuildTarget('dist-rawhide')
+            try:
+                rawhidetarget = self.kojisession.getBuildTarget('dist-rawhide')
+            except:
+                # We couldn't hit koji, bail.
+                raise FedpkgError('Unable to query koji to find rawhide target')
             desttag = rawhidetarget['dest_tag_name']
             return desttag.strip('dist-f')
 

@@ -1044,11 +1044,18 @@ class PackageModule:
                 if branchre.match(branch):
                     # Add it to the fedoras
                     fedoras.append(branch)
-
-        # Sort the list
-        fedoras.sort()
-        # Start with the last item, strip the f, add 1, return it.
-        return(int(fedoras[-1].strip('f')) + 1)
+        if fedoras:
+            # Sort the list
+            fedoras.sort()
+            # Start with the last item, strip the f, add 1, return it.
+            return(int(fedoras[-1].strip('f')) + 1)
+        else:
+            if not self.anonkojisession:
+                self.init_koji()
+            # We may not have Fedoras.  Find out what rawhide target does.
+            rawhidetarget = self.kojisession.getBuildTarget('dist-rawhide')
+            desttag = rawhidetarget['dest_tag_name']
+            return desttag.strip('dist-f')
 
     def _getlocalarch(self):
         """Get the local arch as defined by rpm"""

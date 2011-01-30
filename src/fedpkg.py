@@ -295,7 +295,7 @@ def build(args):
     user = getuser(args.user)
     # Need to do something with BUILD_FLAGS or KOJI_FLAGS here for compat
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
     except pyfedpkg.FedpkgError, e:
         # This error needs a better print out
         log.error('Could not use module: %s' % e)
@@ -347,7 +347,7 @@ def build(args):
 
 def chainbuild(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not use module %s' % e)
         sys.exit(1)
@@ -429,7 +429,7 @@ def clean(args):
 
 def clog(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         return mymodule.clog()
     except pyfedpkg.FedpkgError, e:
         log.error('Could not generate clog: %s' % e)
@@ -454,7 +454,7 @@ def commit(args):
     mymodule = None
     if args.clog:
         try:
-            mymodule = pyfedpkg.PackageModule(args.path)
+            mymodule = pyfedpkg.PackageModule(args.path, args.dist)
             mymodule.clog()
         except pyfedpkg.FedpkgError, e:
             log.error('coult not create clog: %s' % e)
@@ -468,7 +468,7 @@ def commit(args):
     if args.tag:
         try:
             if not mymodule:
-                mymodule = pyfedpkg.PackageModule(args.path)
+                mymodule = pyfedpkg.PackageModule(args.path, args.dist)
             tagname = mymodule.nvr
             pyfedpkg.add_tag(tagname, True, args.message, args.file)
         except pyfedpkg.FedpkgError, e:
@@ -485,7 +485,7 @@ def compile(args):
     if args.short_circuit:
         short = True
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         return mymodule.compile(arch=arch, short=short)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not compile: %s' % e)
@@ -504,7 +504,7 @@ def export(args):
 
 def gimmespec(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         print(mymodule.spec)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not get spec file: %s' % e)
@@ -512,7 +512,7 @@ def gimmespec(args):
 
 def giturl(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         print(mymodule.giturl())
     except pyfedpkg.FedpkgError, e:
         log.error('Could not get the giturl: %s' % e)
@@ -526,7 +526,7 @@ def import_srpm(args):
     if not args.create:
         try:
             uploadfiles = pyfedpkg.import_srpm(args.srpm, path=args.path)
-            mymodule = pyfedpkg.PackageModule(args.path)
+            mymodule = pyfedpkg.PackageModule(args.path, args.dist)
             mymodule.upload(uploadfiles, replace=True)
         except pyfedpkg.FedpkgError, e:
             log.error('Could not import srpm: %s' % e)
@@ -547,7 +547,7 @@ def install(args):
     if args.short_circuit:
         short = True
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         return mymodule.install(arch=arch, short=short)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not install: %s' % e)
@@ -555,7 +555,7 @@ def install(args):
 
 def lint(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         return mymodule.lint(args.info)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not run rpmlint: %s' % e)
@@ -566,7 +566,7 @@ def local(args):
     if args.arch:
         arch = args.arch
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         if args.md5:
             return mymodule.local(arch=arch, hashtype='md5')
         else:
@@ -590,7 +590,7 @@ def mockbuild(args):
         # there were no args
         pass
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         return mymodule.mockbuild(mockargs)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not run mockbuild: %s' % e)
@@ -610,7 +610,7 @@ def new_sources(args):
             log.error('File does not exist: %s' % file)
             sys.exit(1)
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         mymodule.upload(args.files, replace=args.replace)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not upload new sources: %s' % e)
@@ -626,7 +626,7 @@ def prep(args):
     if args.arch:
         arch = args.arch
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         return mymodule.prep(arch=arch)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not prep: %s' % e)
@@ -670,7 +670,7 @@ def sources(args):
 
 def srpm(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         pyfedpkg.sources(args.path)
         if args.md5:
             mymodule.srpm('md5')
@@ -719,7 +719,7 @@ def tag(args):
         tagname = args.tag
         try:
             if not tagname or args.clog:
-                mymodule = pyfedpkg.PackageModule(args.path)
+                mymodule = pyfedpkg.PackageModule(args.path, args.dist)
                 if not tagname:
                     tagname = mymodule.nvr
                 if clog:
@@ -738,7 +738,7 @@ def tagrequest(args):
         args.desc = raw_input('\nAdd a description to your request: ')
 
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         mymodule.new_ticket(user, passwd, args.desc, args.build)
     except pyfedpkg.FedpkgError, e:
         print('Could not request a tag release: %s' % e)
@@ -750,7 +750,7 @@ def unusedfedpatches(args):
 
 def unusedpatches(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         unused = mymodule.unused_patches()
     except pyfedpkg.FedpkgError, e:
         log.error('Could not get unused patches: %s' % e)
@@ -761,7 +761,7 @@ def update(args):
     """Submit a new update to bodhi"""
     user = getuser(args.user)
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not use module: %s' % e)
         sys.exit(1)
@@ -840,7 +840,7 @@ def update(args):
 
 def verrel(args):
     try:
-        mymodule = pyfedpkg.PackageModule(args.path)
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not get ver-rel: %s' % e)
         sys.exit(1)
@@ -855,6 +855,9 @@ if __name__ == '__main__':
                                                "--help to a target")
 
     # Add top level arguments
+    # Let people override the "distribution"
+    parser.add_argument('--dist', default=None,
+                        help='Override the distribution, eg f15 or el6')
     # Let somebody override the username found in fedora cert
     parser.add_argument('-u', '--user')
     # Let the user define which path to look at instead of pwd

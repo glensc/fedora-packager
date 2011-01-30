@@ -1067,7 +1067,7 @@ class PackageModule:
         return subprocess.Popen(['rpm --eval %{_arch}'], shell=True,
                         stdout=subprocess.PIPE).communicate()[0].strip('\n')
 
-    def __init__(self, path=None):
+    def __init__(self, path=None, dist=None):
         # Initiate a PackageModule object in a given path
         # Set some global variables used throughout
         if not path:
@@ -1091,7 +1091,10 @@ class PackageModule:
             raise FedpkgError('%s is not a valid repo' % path)
         # Find the branch and set things based from that
         # Still requires a 'branch' file in each branch
-        self.branch = self._findbranch()
+        if dist:
+            self.branch = dist
+        else:
+            self.branch = self._findbranch()
         if self.branch.startswith('f'):
             self.distval = self.branch.split('f')[1]
             self.distvar = 'fedora'

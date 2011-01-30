@@ -40,7 +40,7 @@ GITBASEURL = 'ssh://%(user)s@pkgs.fedoraproject.org/%(module)s'
 ANONGITURL = 'git://pkgs.fedoraproject.org/%(module)s'
 TRACBASEURL = 'https://%(user)s:%(password)s@fedorahosted.org/rel-eng/login/xmlrpc'
 UPLOADEXTS = ['tar', 'gz', 'bz2', 'lzma', 'xz', 'Z', 'zip', 'tff', 'bin',
-              'tbz', 'tbz2', 'tgz', 'tlz', 'txz', 'pdf', 'rpm', 'jar', 'war', 
+              'tbz', 'tbz2', 'tgz', 'tlz', 'txz', 'pdf', 'rpm', 'jar', 'war',
               'db', 'cpio', 'jisp', 'egg', 'gem']
 BRANCHFILTER = 'f\d\d\/master|master|el\d\/master|olpc\d\/master'
 

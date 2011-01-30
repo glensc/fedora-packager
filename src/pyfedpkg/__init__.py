@@ -1072,6 +1072,7 @@ class PackageModule:
         self.mockconfig = None
         # Set a place holder for kojisession
         self.kojisession = None
+        self.anonkojisession = None
         # Setup the repo
         try:
             self.repo = git.Repo(path)
@@ -1386,10 +1387,10 @@ class PackageModule:
         self.kojisession.uploadWrapper(file, path, callback = callback)
         return
 
-    def init_koji(self, user, kojiconfig=None, url=None):
+    def init_koji(self, user=None, kojiconfig=None, url=None):
         """Initiate a koji session.  Available options are:
 
-        user: User to log into koji as
+        user: User to log into koji as (if no user, no login)
 
         kojiconfig: Use an alternate koji config file
 
@@ -1431,19 +1432,24 @@ class PackageModule:
         # watch the tasks.
         log.debug('Initiating a koji session to %s' % defaults['server'])
         try:
-            self.kojisession = koji.ClientSession(defaults['server'], session_opts)
+            if user:
+                self.kojisession = koji.ClientSession(defaults['server'],
+                                                      session_opts)
+            else:
+                self.kojisession = koji.ClientSession(defaults['server'])
         except:
             raise FedpkgError('Could not initiate koji session')
         # save the weburl for later use too
         self.kojiweburl = defaults['weburl']
         # log in using ssl
-        try:
-            self.kojisession.ssl_login(defaults['cert'], defaults['ca'],
-                                       defaults['serverca'])
-        except:
-            raise FedpkgError('Opening a SSL connection failed')
-        if not self.kojisession.logged_in:
-            raise FedpkgError('Could not auth with koji as %s' % user)
+        if user:
+            try:
+                self.kojisession.ssl_login(defaults['cert'], defaults['ca'],
+                                           defaults['serverca'])
+            except:
+                raise FedpkgError('Opening a SSL connection failed')
+            if not self.kojisession.logged_in:
+                raise FedpkgError('Could not auth with koji as %s' % user)
         return
 
     def install(self, arch=None, short=False):

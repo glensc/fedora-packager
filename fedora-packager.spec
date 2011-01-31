@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.2.0
+Version:        0.5.3.0
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -73,6 +73,25 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Jan 31 2011 Jesse Keating <jkeating@redhat.com> 0.5.3.0-1
+- Catch the case where there is no branch merge point (#622592) (jkeating)
+- Fix whitespace (jkeating)
+- Add an argument to override the "distribution" (jkeating)
+- upload to lookaside cache tgz files (dennis)
+- Handle traceback if koji is down or unreachable. (jkeating)
+- If we don't have a remote branch, query koji (#619979) (jkeating)
+- Add a method to create an anonymous koji session (jkeating)
+- Make sure we have sources for mockbuild (#665555) (jwboyer) (jkeating)
+- Revert "Make sure we have an srpm when doing a mockbuild (#665555)" (jkeating)
+- Regenerate the srpm if spec file is newer (ticket #84) (jkeating)
+- Improve cert failure message (Ticket 90) (jkeating)
+- Get package name from the specfile. (Ticket 75) (jkeating)
+- Handle anonymous clones in clone_with_dirs. (#660183) (ricky)
+- Make sure we have an srpm when doing a mockbuild (#665555) (jkeating)
+- Catch all errors from watching tasks. (#670305) (jkeating)
+- Fix a traceback when koji goes offline (#668889) (jkeating)
+- Fix traceback with lint (ticket 89) (jkeating)
+
 * Wed Jan 05 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.2.0-1
 - new release see ChangeLog
 

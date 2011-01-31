@@ -501,6 +501,14 @@ def diff(args):
         log.error('Could not diff: %s' % e)
         sys.exit(1)
 
+def verify_files(args):
+    try:
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
+        return mymodule.verify_files()
+    except pyfedpkg.FedpkgError, e:
+        log.error('Could not verify %%files list: %s' % e)
+        sys.exit(1)
+
 def export(args):
     # not implimented; not planned
     log.warning('Not implimented yet, got %s' % args)
@@ -1073,6 +1081,12 @@ defined, packages will be built sequentially.""")
     parser_compile.add_argument('--short-circuit', action = 'store_true',
                                 help = 'short-circuit compile')
     parser_compile.set_defaults(command = compile)
+
+    # Verify %files list locally
+    parser_verify_files = subparsers.add_parser('verify-files',
+                                                help='Locally verify %%files section',
+                                                description="Locally run 'rpmbuild -bl' to verify the spec file's %files sections. This is useful after a successful run of 'fedpkg install' or after a 'fedpkg local' run which failed due to %files list inaccuracies.")
+    parser_verify_files.set_defaults(command = verify_files)
 
     # export the module; not planned
     #parser_export = subparsers.add_parser('export',

@@ -1341,6 +1341,19 @@ class PackageModule:
         _run_command(cmd, shell=True)
         return
 
+    def verify_files(self):
+        """Run rpmbuild -bl on a module to verify the %files section"""
+
+        # Get the sources
+        sources(self.path)
+        # setup the rpm command
+        cmd = ['rpmbuild']
+        cmd.extend(self.rpmdefines)
+        cmd.extend(['-bl', os.path.join(self.path, self.spec)])
+        # Run the command
+        _run_command(cmd, shell=True)
+        return
+
     def getver(self):
         """Return the version-release of a package module."""
 

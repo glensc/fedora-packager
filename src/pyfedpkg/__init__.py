@@ -1182,13 +1182,16 @@ class PackageModule:
             # Need to check here to see if the local commit you want to build is
             # pushed or not
             branch = self.repo.active_branch
-            remote = self.repo.git.config('--get',
-                'branch.%s.remote' % branch)
+            try:
+                remote = self.repo.git.config('--get',
+                    'branch.%s.remote' % branch)
 
-            merge = self.repo.git.config('--get',
-                'branch.%s.merge' % branch).replace('refs/heads', remote)
-            if self.repo.git.rev_list('%s...%s' % (branch, merge)):
-                raise FedpkgError('There are unpushed changes in your repo')
+                merge = self.repo.git.config('--get',
+                    'branch.%s.merge' % branch).replace('refs/heads', remote)
+                if self.repo.git.rev_list('%s...%s' % (branch, merge)):
+                    raise FedpkgError('There are unpushed changes in your repo')
+            except git.errors.GitCommandError:
+                raise FedpkgError('You must provide a srpm or push your changes to origin.')
             # Get the commit hash to build
             commit = self.repo.iter_commits().next().sha
             url = ANONGITURL % {'module': self.module} + '?#%s' % commit

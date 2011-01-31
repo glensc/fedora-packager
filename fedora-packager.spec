@@ -34,6 +34,7 @@ Requires:       GitPython >= 0.2.0, python-argparse, curl
 Requires:       fedora-packager = %{version}-%{release}
 %if 0%{?rhel} == 5 || 0%{?rhel} == 4
 Requires:       python-kitchen
+Requires:       python-hashlib
 %endif
 
 %description -n fedpkg

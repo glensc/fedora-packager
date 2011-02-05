@@ -861,7 +861,8 @@ def parse_cmdline(generate_manpage = False):
     parser.add_argument('--dist', default=None,
                         help='Override the distribution, eg f15 or el6')
     # Let somebody override the username found in fedora cert
-    parser.add_argument('-u', '--user')
+    parser.add_argument('-u', '--user',
+                        help = "Override the username found in the fedora cert")
     # Let the user define which path to look at instead of pwd
     parser.add_argument('--path', default = os.getcwd(),
                     help='Directory to interact with instead of current dir')

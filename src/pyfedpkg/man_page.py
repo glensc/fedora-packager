@@ -111,36 +111,20 @@ def generate(parser, subparsers):
     for pa in subparsers._choices_actions:
         help_texts[pa.dest] = getattr(pa, 'help', None)
 
-    if True: # Either kill THIS
-        # determine length of longest command and generate format string
-        commands = help_texts.keys()
-        commands.sort(lambda a,b: cmp(len(b), len(a)))
-        max_cmdlen = len(commands[0])
-        fmtstring = ' %%-%ds %%s\n' % (max_cmdlen,)
+    man_file.write('.SH "COMMAND OVERVIEW"\n')
 
-        man_file.write('.SS "Commands"\n')
-
-        for command in k:
-            cmdparser = choices[command]
-            if not cmdparser.add_help:
-                continue
-            man_file.write(fmtstring % (command, help_texts[command]))
-
-    if True: # Or kill THIS
-        man_file.write('.SH "COMMAND OVERVIEW"\n')
-
-        for command in k:
-            cmdparser = choices[command]
-            if not cmdparser.add_help:
-                continue
-            usage = cmdparser.format_usage()
-            usage = strip_usage(usage)
-            usage = ''.join(usage.split('\n'))
-            usage = ' '.join(usage.split())
-            if help_texts[command]:
-                man_file.write('.TP\n.B "%s"\n%s\n' % (usage, help_texts[command]))
-            else:
-                man_file.write('.TP\n.B "%s"\n' % (usage))
+    for command in k:
+        cmdparser = choices[command]
+        if not cmdparser.add_help:
+            continue
+        usage = cmdparser.format_usage()
+        usage = strip_usage(usage)
+        usage = ''.join(usage.split('\n'))
+        usage = ' '.join(usage.split())
+        if help_texts[command]:
+            man_file.write('.TP\n.B "%s"\n%s\n' % (usage, help_texts[command]))
+        else:
+            man_file.write('.TP\n.B "%s"\n' % (usage))
 
     man_file.write('.SH "COMMAND REFERENCE"\n')
     for command in k:

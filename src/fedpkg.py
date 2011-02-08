@@ -869,7 +869,7 @@ def parse_cmdline(generate_manpage = False):
     parser.add_argument('-u', '--user',
                         help = "Override the username found in the fedora cert")
     # Let the user define which path to look at instead of pwd
-    parser.add_argument('--path', default = os.getcwd(),
+    parser.add_argument('--path', default = None,
                     help='Directory to interact with instead of current dir')
     # Verbosity
     parser.add_argument('-v', action = 'store_true',
@@ -1253,6 +1253,13 @@ packages will be built sequentially.
 # The main code goes here
 if __name__ == '__main__':
     args = parse_cmdline()
+
+    if not args.path:
+        try:
+            args.path=os.getcwd()
+        except:
+            print('Could not get current path, have you deleted it?')
+            sys.exit(1)
 
     # setup the logger -- This logger will take things of INFO or DEBUG and
     # log it to stdout.  Anything above that (WARN, ERROR, CRITICAL) will go

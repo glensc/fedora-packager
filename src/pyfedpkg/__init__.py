@@ -1152,7 +1152,7 @@ class PackageModule:
             self.hashtype = 'md5'
  
     def build(self, skip_tag=False, scratch=False, background=False,
-              url=None, chain=None):
+              url=None, chain=None, arches=None):
         """Initiate a build of the module.  Available options are:
 
         skip_tag: Skip the tag action after the build
@@ -1233,6 +1233,11 @@ class PackageModule:
         if background:
             cmd.append('--background')
             priority = 5 # magic koji number :/
+        if arches:
+            if not scratch:
+                raise FedpkgError('Cannot override arches for non-scratch builds')
+            cmd.append('--arch-override=%s' % ','.join(arches))
+            opts['arch_override'] = ' '.join(arches)
 
         cmd.append(self.target)
         # see if this build has been done.  Does not check builds within

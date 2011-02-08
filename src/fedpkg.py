@@ -286,6 +286,10 @@ def build(args):
     if hasattr(args, 'srpm') and args.srpm and not args.scratch:
         log.error('Non-scratch builds cannot be from srpms.')
         sys.exit(1)
+    # We may have gotten arches by way of scratch build, so handle them
+    arches = None
+    if hasattr(args, 'arches'):
+        arches = args.arches
     # Place holder for if we build with an uploaded srpm or not
     url = None
     # See if this is a chain or not
@@ -327,7 +331,7 @@ def build(args):
     # Should also try this, again not sure what errors to catch
     try:
         task_id = mymodule.build(args.skip_tag, args.scratch, args.background,
-                                 url, chain)
+                                 url, chain, arches)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not initiate build: %s' % e)
         sys.exit(1)

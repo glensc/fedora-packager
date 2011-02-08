@@ -1297,7 +1297,7 @@ class PackageModule:
                     if line2.startswith('*'):
                         # skip the email n/v/r line.  Redundant
                         continue
-                    cloglines.append(line2.replace('%%', '%'))
+                    cloglines.append(line2.lstrip('- ').replace('%%', '%'))
         # Now open the clog file and write out the lines
         clogfile = open(os.path.join(self.path, 'clog'), 'w')
         clogfile.writelines(cloglines)

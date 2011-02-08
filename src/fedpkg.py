@@ -346,7 +346,8 @@ def build(args):
         return _watch_koji_tasks(mymodule.kojisession, [task_id], quiet=args.q)
     except:
         # We could get an auth error if credentials have expired
-        log.error('Could not watch build: %s' % sys.exec_info()[0])
+        # use exc_info here to get what kind of error this is
+        log.error('Could not watch build: %s' % sys.exc_info()[0])
         sys.exit(1)
 
 def chainbuild(args):

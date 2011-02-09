@@ -149,6 +149,9 @@ _fedpkg()
         prep)
             options_arch="--arch"
             ;;
+        pull)
+            options="--rebase --no-rebase"
+            ;;
         retire)
             options="--push"
             after_more=true

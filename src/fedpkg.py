@@ -742,7 +742,8 @@ def tagrequest(args):
 
     try:
         mymodule = pyfedpkg.PackageModule(args.path, args.dist)
-        mymodule.new_ticket(user, passwd, args.desc, args.build)
+        ticket = mymodule.new_ticket(user, passasswd, args.desc, args.build)
+        print('Ticket #%s filed successfully' % ticket)
     except pyfedpkg.FedpkgError, e:
         print('Could not request a tag release: %s' % e)
         sys.exit(1)

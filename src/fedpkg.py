@@ -406,8 +406,6 @@ def getuser(user=None):
     if user:
         return user
     else:
-        # Doing a try doesn't really work since the fedora_cert library just
-        # exits on error, but if that gets fixed this will work better.
         try:
             return fedora_cert.read_user_cert()
         except:

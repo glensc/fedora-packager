@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.3.0
+Version:        0.5.4.0
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -21,7 +21,6 @@ Requires:       pyOpenSSL
 Requires:       redhat-rpm-config
 Requires:       fedpkg = %{version}-%{release}
 Requires:       fedora-cert = %{version}-%{release}
-Requires:       ykpers
 Requires:       ykpers
 
 BuildArch:      noarch
@@ -93,9 +92,28 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/fedpkg
 %{python_sitelib}/pyfedpkg
 %{_sysconfdir}/bash_completion.d
+%{_mandir}/*/*
 
 
 %changelog
+* Wed Feb 09 2011 Jesse Keating <jkeating@redhat.com> - 0.5.4.0-1
+- Re-arrange verify-files and slight fixups (jkeating)
+- Add "fedpkg verify-files" command (hun)
+- Provide feedback about new-ticket. (ticket 91) (jkeating)
+- Add the new pull options to bash completion (jkeating)
+- Add a --rebase and --no-rebase option to pull (jkeating)
+- Update the documentation for a lot of commands (jkeating)
+- Handle working from a non-existent path (#675398) (jkeating)
+- Fix an traceback when failing to watch a build. (jkeating)
+- Handle arches argument for scratch builds (#675285) (jkeating)
+- Trim the "- " out of clogs.  (#675892) (jkeating)
+- Exit with an error when appropriate (jkeating)
+- Add build time man page generator (hun)
+- Add help text for global --user option (hun)
+- Move argparse setup into parse_cmdline function (hun)
+- Require python-hashlib on EL5 and 4 (jkeating)
+- Catch a traceback when trying to build from local branch (jkeating)
+
 * Mon Jan 31 2011 Jesse Keating <jkeating@redhat.com> 0.5.3.0-1
 - Catch the case where there is no branch merge point (#622592) (jkeating)
 - Fix whitespace (jkeating)
@@ -115,7 +133,7 @@ rm -rf $RPM_BUILD_ROOT
 - Fix a traceback when koji goes offline (#668889) (jkeating)
 - Fix traceback with lint (ticket 89) (jkeating)
 
-* Wed Jan 05 2010 Dennis Gilmore <dennis@ausil.us> - 0.5.2.0-1
+* Wed Jan 05 2011 Dennis Gilmore <dennis@ausil.us> - 0.5.2.0-1
 - new release see ChangeLog
 
 * Tue Aug 24 2010 Jesse Keating <jkeating@redhat.com> - 0.5.1.4-1

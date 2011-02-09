@@ -933,7 +933,7 @@ The current package is added to the end of the CHAIN list.
 Colons (:) can be used in the CHAIN parameter to define groups of
 packages.  Packages in any single group will be built in parallel
 and all packages in a group must build successfully and populate
-the repository before the next group will begin building.  
+the repository before the next group will begin building.
 
 For example:
 
@@ -1011,7 +1011,7 @@ defined, packages will be built sequentially.""")
                                       the master branch for your working \
                                       copy.')
     parser_co.set_defaults(command = clone)
-    
+
     # commit stuff
     parser_commit = subparsers.add_parser('commit',
                                           help = 'Commit changes',

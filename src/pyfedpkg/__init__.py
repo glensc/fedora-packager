@@ -710,12 +710,22 @@ def new(path=None):
     log.debug('Diffing from tag %s' % tag)
     return repo.git.diff('-M', tag)
 
-def pull(path=None):
-    """Pull changes from the main repository using optional path"""
+def pull(path=None, rebase=False, norebase=False):
+    """Pull changes from the main repository using optional path
+
+    Optionally rebase current branch on top of upstream branch
+
+    Optionally override .git setting to always rebase
+
+    """
 
     if not path:
         path = os.getcwd()
     cmd = ['git', 'pull']
+    if rebase:
+        cmd.append('--rebase')
+    if norebase:
+        cmd.append('--no-rebase')
     _run_command(cmd, cwd=path)
     return
  

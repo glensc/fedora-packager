@@ -639,7 +639,7 @@ def prep(args):
 
 def pull(args):
     try:
-        pyfedpkg.pull(path=args.path)
+        pyfedpkg.pull(path=args.path, rebase=args.rebase, norebase=args.no_rebase)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not pull: %s' % e)
         sys.exit(1)
@@ -1227,7 +1227,22 @@ defined, packages will be built sequentially.""")
     # Pull stuff
     parser_pull = subparsers.add_parser('pull',
                                         help = 'Pull changes from remote '
-                                        'repository and update working copy')
+                                        'repository and update working copy.',
+                                        description = 'This command uses git \
+                                        to fetch remote changes and apply \
+                                        them to the current working copy.  A \
+                                        rebase option is available which can \
+                                        be used to avoid merges.',
+                                        epilog = 'See git pull --help for \
+                                        more details')
+    parser_pull.add_argument('--rebase', action = 'store_true',
+                             help = 'Rebase the locally committed changes on \
+                             top of the remote changes after fetching.  This \
+                             can avoid a merge commit, but does rewrite local \
+                             history.')
+    parser_pull.add_argument('--no-rebase', action = 'store_true',
+                             help = 'Do not rebase, override .git settings to \
+                             automatically rebase')
     parser_pull.set_defaults(command = pull)
 
 

@@ -641,7 +641,7 @@ def pull(args):
     try:
         pyfedpkg.pull(path=args.path)
     except pyfedpkg.FedpkgError, e:
-        log.error('Could not push: %s' % e)
+        log.error('Could not pull: %s' % e)
         sys.exit(1)
 
 def push(args):
@@ -878,7 +878,8 @@ def parse_cmdline(generate_manpage = False):
                         help = 'Run quietly only displaying errors')
 
     # Add a subparsers object to use for the actions
-    subparsers = parser.add_subparsers(title = 'Targets')
+    subparsers = parser.add_subparsers(title = 'Targets',
+                                       description = 'These are valid commands you can ask fedpkg to do.')
 
     # Set up the various actions
     # Add help to -h and --help
@@ -901,7 +902,13 @@ def parse_cmdline(generate_manpage = False):
     # build target
     parser_build = subparsers.add_parser('build',
                                          help = 'Request build',
-                                         parents = [parser_build_common])
+                                         parents = [parser_build_common],
+                                         description = 'This command \
+                                         requests a build of the package \
+                                         in the build system.  By default \
+                                         it discovers the target to build for \
+                                         based on branch data, and uses the \
+                                         latest commit as the build source.')
     parser_build.add_argument('--skip-tag', action = 'store_true',
                               default = False,
                               help = 'Do not attempt to tag package')
@@ -915,21 +922,29 @@ def parse_cmdline(generate_manpage = False):
     # chain build
     parser_chainbuild = subparsers.add_parser('chain-build',
                 help = 'Build current package in order with other packages',
-                parents = [parser_build_common])
-    parser_chainbuild.add_argument('package', nargs = '+',
-                                   help = """
-Build current package in order with other packages
+                parents = [parser_build_common],
+                formatter_class=argparse.RawDescriptionHelpFormatter,
+                description = """
+Build current package in order with other packages.
+
 example: fedpkg chain-build libwidget libgizmo
+
 The current package is added to the end of the CHAIN list.
-Colons (:) can be used in the CHAIN parameter to define groups of packages.
-Packages in any single group will be built in parallel and all packages in
-a group must build successfully and populate the repository before the next
-group will begin building.  For example:
+Colons (:) can be used in the CHAIN parameter to define groups of
+packages.  Packages in any single group will be built in parallel
+and all packages in a group must build successfully and populate
+the repository before the next group will begin building.  
+
+For example:
+
 fedpkg chain-build libwidget libaselib : libgizmo :
-will cause libwidget and libaselib to be built in parallel, followed by
-libgizmo and then the currect directory package. If no groups are defined,
-packages will be built sequentially.
-""")
+
+will cause libwidget and libaselib to be built in parallel, followed
+by libgizmo and then the currect directory package. If no groups are
+defined, packages will be built sequentially.""")
+    parser_chainbuild.add_argument('package', nargs = '+',
+                                   help = 'List the packages and order you '
+                                   'want to build in')
     parser_chainbuild.set_defaults(command = chainbuild)
 
     # check preps; not planned
@@ -939,7 +954,11 @@ packages will be built sequentially.
 
     # clean things up
     parser_clean = subparsers.add_parser('clean',
-                                         help = 'Remove untracked files')
+                                         help = 'Remove untracked files',
+                                         description = "This command can be \
+                                         used to clean up your working \
+                                         directory.  By default it will \
+                                         follow .gitignore rules.")
     parser_clean.add_argument('--dry-run', '-n', action = 'store_true',
                               help = 'Perform a dry-run')
     parser_clean.add_argument('-x', action = 'store_true',
@@ -948,16 +967,28 @@ packages will be built sequentially.
 
     # Create a changelog stub
     parser_clog = subparsers.add_parser('clog',
-                    help = 'Make a clog file containing top changelog entry')
+                                        help = 'Make a clog file containing '
+                                        'top changelog entry',
+                                        description = 'This will create a \
+                                        file named "clog" that contains the \
+                                        latest rpm changelog entry. The \
+                                        leading "- " text will be stripped.')
     parser_clog.set_defaults(command = clog)
 
     # clone take some options, and then passes the rest on to git
     parser_clone = subparsers.add_parser('clone',
-                                         help = 'Clone and checkout a module')
+                                         help = 'Clone and checkout a module',
+                                         description = 'This command will \
+                                         clone the named module from the \
+                                         configured repository base URL.  \
+                                         By default it will also checkout \
+                                         the master branch for your working \
+                                         copy.')
     # Allow an old style clone with subdirs for branches
     parser_clone.add_argument('--branches', '-B',
-                action = 'store_true',
-                help = 'Do an old style checkout with subdirs for branches')
+                              action = 'store_true',
+                              help = 'Do an old style checkout with subdirs \
+                              for branches')
     # provide a convenient way to get to a specific branch
     parser_clone.add_argument('--branch', '-b',
                               help = 'Check out a specific branch')
@@ -972,11 +1003,26 @@ packages will be built sequentially.
 
     parser_co = subparsers.add_parser('co', parents = [parser_clone],
                                       conflict_handler = 'resolve',
-                                      help = 'Alias for clone')
+                                      help = 'Alias for clone',
+                                      description = 'This command will \
+                                      clone the named module from the \
+                                      configured repository base URL.  \
+                                      By default it will also checkout \
+                                      the master branch for your working \
+                                      copy.')
     parser_co.set_defaults(command = clone)
+    
     # commit stuff
     parser_commit = subparsers.add_parser('commit',
-                                          help = 'Commit changes')
+                                          help = 'Commit changes',
+                                          description = 'This envokes a git \
+                                          commit.  All tracked files with \
+                                          changes will be committed unless \
+                                          a specific file list is provided.  \
+                                          $EDITOR will be used to generate a \
+                                          changelog message unless one is \
+                                          given to the command.  A push \
+                                          can be done at the same time.')
     parser_commit.add_argument('-c', '--clog',
                                default = False,
                                action = 'store_true',
@@ -1004,12 +1050,26 @@ packages will be built sequentially.
 
     parser_ci = subparsers.add_parser('ci', parents = [parser_commit],
                                       conflict_handler = 'resolve',
-                                      help = 'Alias for commit')
+                                      help = 'Alias for commit',
+                                      description = 'This envokes a git \
+                                      commit.  All tracked files with \
+                                      changes will be committed unless \
+                                      a specific file list is provided.  \
+                                      $EDITOR will be used to generate a \
+                                      changelog message unless one is \
+                                      given to the command.  A push \
+                                      can be done at the same time.')
     parser_ci.set_defaults(command = commit)
 
     # compile locally
     parser_compile = subparsers.add_parser('compile',
-                                        help = 'Local test rpmbuild compile')
+                                           help = 'Local test rpmbuild compile',
+                                           description = 'This command calls \
+                                           rpmbuild to compile the source.  \
+                                           By default the prep and configure \
+                                           stages will be done as well, \
+                                           unless the short-circuit option \
+                                           is used.')
     parser_compile.add_argument('--arch', help = 'Arch to compile for')
     parser_compile.add_argument('--short-circuit', action = 'store_true',
                                 help = 'short-circuit compile')
@@ -1022,7 +1082,13 @@ packages will be built sequentially.
 
     # diff, should work mostly like git diff
     parser_diff = subparsers.add_parser('diff',
-        help = "Show changes between commits, commit and working tree, etc")
+                                        help = 'Show changes between commits, '
+                                        'commit and working tree, etc',
+                                        description = 'Use git diff to show \
+                                        changes that have been made to \
+                                        tracked files.  By default cached \
+                                        changes (changes that have been git \
+                                        added) will not be shown.')
     parser_diff.add_argument('--cached', default = False,
                              action = 'store_true',
                              help = 'View staged changes')
@@ -1033,17 +1099,31 @@ packages will be built sequentially.
 
     # gimmespec takes an optional path argument, defaults to cwd
     parser_gimmespec = subparsers.add_parser('gimmespec',
-                                             help = 'print spec file name')
+                                             help = 'Print the spec file name')
     parser_gimmespec.set_defaults(command = gimmespec)
 
     # giturl
     parser_giturl = subparsers.add_parser('giturl',
-                                          help = 'print the url for building')
+                                          help = 'Print the git url for '
+                                          'building',
+                                          description = 'This will show you \
+                                          which git URL would be used in a \
+                                          build command.  It uses the git \
+                                          hashsum of the HEAD of the current \
+                                          branch (which may not be pushed).')
     parser_giturl.set_defaults(command = giturl)
 
     # Import content into a module
     parser_import_srpm = subparsers.add_parser('import',
-                                          help = 'Import content into a module')
+                                               help = 'Import srpm content '
+                                               'into a module',
+                                               description = 'This will \
+                                               extract sources, patches, and \
+                                               the spec file from an srpm and \
+                                               update the current module \
+                                               accordingly.  It will import \
+                                               to the current branch by \
+                                               default.')
     parser_import_srpm.add_argument('--branch', '-b',
                                     help = 'Branch to import onto',
                                     default = 'devel')
@@ -1056,7 +1136,12 @@ packages will be built sequentially.
 
     # install locally
     parser_install = subparsers.add_parser('install',
-                                        help = 'Local test rpmbuild install')
+                                           help = 'Local test rpmbuild install',
+                                           description = 'This will call \
+                                           rpmbuild to run the install \
+                                           section.  All leading sections \
+                                           will be processed as well, unless \
+                                           the short-circuit option is used.')
     parser_install.add_argument('--arch', help = 'Arch to install for')
     parser_install.add_argument('--short-circuit', action = 'store_true',
                                 help = 'short-circuit install')
@@ -1064,16 +1149,21 @@ packages will be built sequentially.
 
     # rpmlint target
     parser_lint = subparsers.add_parser('lint',
-                            help = 'Run rpmlint against local build output')
+                                        help = 'Run rpmlint against local '
+                                        'build output')
     parser_lint.add_argument('--info', '-i',
                              default = False,
                              action = 'store_true',
                              help = 'Display explanations for reported messages')
-    parser_lint.set_defaults(command = lint)
 
     # Build locally
     parser_local = subparsers.add_parser('local',
-                                         help = 'Local test rpmbuild binary')
+                                         help = 'Local test rpmbuild binary',
+                                         description = 'Locally test run of \
+                                         rpmbuild producing binary RPMs. The \
+                                         rpmbuild output will be logged into a \
+                                         file named \
+                                         .build-%{version}-%{release}.log')
     parser_local.add_argument('--arch', help = 'Build for arch')
     # optionally define old style hashsums
     parser_local.add_argument('--md5', action = 'store_true',
@@ -1082,48 +1172,77 @@ packages will be built sequentially.
 
     # Build in mock
     parser_mockbuild = subparsers.add_parser('mockbuild',
-                                        help = 'Local test build using mock')
+                                             help = 'Local test build using '
+                                             'mock',
+                                             description = 'This will use \
+                                             the mock utility to build the \
+                                             package for the distribution \
+                                             detected from branch \
+                                             information.  This can be \
+                                             overridden using the global \
+                                             --dist option.  Your user must \
+                                             be in the local "mock" group.')
     parser_mockbuild.set_defaults(command = mockbuild)
 
     # See what's different
     parser_new = subparsers.add_parser('new',
-                                       help = 'Diff against last tag')
+                                       help = 'Diff against last tag',
+                                       description = 'This will use git to \
+                                       show a diff of all the changes \
+                                       (even uncommited changes) since the \
+                                       last git tag was applied.')
     parser_new.set_defaults(command = new)
 
     # newsources target takes one or more files as input
     parser_newsources = subparsers.add_parser('new-sources',
-                                              help = 'Upload new source files')
+                                              help = 'Upload new source files',
+                                              description = 'This will upload \
+                                              new source files to the \
+                                              lookaside cache and remove \
+                                              any existing files.  The \
+                                              "sources" and .gitignore file \
+                                              will be updated for the new \
+                                              file(s).')
     parser_newsources.add_argument('files', nargs = '+')
     parser_newsources.set_defaults(command = new_sources, replace = True)
 
     # patch
     parser_patch = subparsers.add_parser('patch',
-                                help = 'Create and add a gendiff patch file')
+                                         help = 'Create and add a gendiff '
+                                         'patch file')
     parser_patch.add_argument('--suffix')
     parser_patch.add_argument('--rediff', action = 'store_true',
-                            help = 'Recreate gendiff file retaining comments')
+                              help = 'Recreate gendiff file retaining comments')
     parser_patch.set_defaults(command = patch)
 
     # Prep locally
     parser_prep = subparsers.add_parser('prep',
-                                        help = 'Local test rpmbuild prep')
+                                        help = 'Local test rpmbuild prep',
+                                        description = 'Use rpmbuild to "prep" \
+                                        the sources (unpack the source \
+                                        archive(s) and apply any patches.)')
     parser_prep.add_argument('--arch', help = 'Prep for a specific arch')
     parser_prep.set_defaults(command = prep)
 
     # Pull stuff
     parser_pull = subparsers.add_parser('pull',
-                                help = 'Pull changes from remote repository and update working copy')
+                                        help = 'Pull changes from remote '
+                                        'repository and update working copy')
     parser_pull.set_defaults(command = pull)
 
 
     # Push stuff
     parser_push = subparsers.add_parser('push',
-                                help = 'Push changes to remote repository')
+                                        help = 'Push changes to remote '
+                                        'repository')
     parser_push.set_defaults(command = push)
 
     # retire stuff
     parser_retire = subparsers.add_parser('retire',
-                                          help = 'Retire a package')
+                                          help = 'Retire a package',
+                                          description = 'This command will \
+                                          remove all files from the repo \
+                                          and leave a dead.package file.')
     parser_retire.add_argument('-p', '--push',
                                default = False,
                                action = 'store_true',
@@ -1136,7 +1255,16 @@ packages will be built sequentially.
     # scratch build
     parser_scratchbuild = subparsers.add_parser('scratch-build',
                                                 help = 'Request scratch build',
-                                                parents = [parser_build_common])
+                                                parents = [parser_build_common],
+                                                description = 'This command \
+                                                will request a scratch build \
+                                                of the package.  Without \
+                                                providing an srpm, it will \
+                                                attempt to build the latest \
+                                                commit, which must have been \
+                                                pushed.  By default all \
+                                                approprate arches will be \
+                                                built.')
     parser_scratchbuild.add_argument('--arches', nargs = '*',
                                      help = 'Build for specific arches')
     parser_scratchbuild.add_argument('--srpm', help='Build from srpm')
@@ -1160,7 +1288,13 @@ packages will be built sequentially.
 
     # switch branches
     parser_switchbranch = subparsers.add_parser('switch-branch',
-                                help = 'Work with branches')
+                                                help = 'Work with branches',
+                                                description = 'This command \
+                                                can create or switch to a \
+                                                local git branch.  It can \
+                                                also be used to list the \
+                                                existing local and remote \
+                                                branches.')
     parser_switchbranch.add_argument('branch',  nargs = '?',
                                      help = 'Switch to or create branch')
     parser_switchbranch.add_argument('-l', '--list',
@@ -1170,7 +1304,9 @@ packages will be built sequentially.
 
     # tag stuff
     parser_tag = subparsers.add_parser('tag',
-                                       help = 'Management of git tags')
+                                       help = 'Management of git tags',
+                                       description = 'This command uses git \
+                                       to create, list, or delete tags.')
     parser_tag.add_argument('-f', '--force',
                             default = False,
                             action = 'store_true',
@@ -1201,7 +1337,15 @@ packages will be built sequentially.
 
     # Create a releng tag request
     parser_tagrequest = subparsers.add_parser('tag-request',
-                            help = 'Submit current build nvr as a releng tag request')
+                                              help = 'Submit current build nvr '
+                                              'as a releng tag request',
+                                              description = 'This command \
+                                              files a ticket with release \
+                                              engineering, usually for a \
+                                              buildroot override.  It will \
+                                              discover the build n-v-r \
+                                              automatically but can be \
+                                              overridden.')
     parser_tagrequest.add_argument('--desc', help="Description of tag request")
     parser_tagrequest.add_argument('--build', help="Override the build n-v-r")
     parser_tagrequest.set_defaults(command = tagrequest)
@@ -1214,25 +1358,36 @@ packages will be built sequentially.
 
     # Show unused patches
     parser_unusedpatches = subparsers.add_parser('unused-patches',
-            help = 'Print list of patches not referenced by name in specfile')
+                                                 help = 'Print list of patches '
+                                                 'not referenced by name in '
+                                                 'the specfile')
     parser_unusedpatches.set_defaults(command = unusedpatches)
 
     # Submit to bodhi for update
     parser_update = subparsers.add_parser('update',
-                                    help = 'Submit last build as an update')
+                                          help = 'Submit last build as an '
+                                          'update',
+                                          description = 'This will create a \
+                                          bodhi update request for the \
+                                          current package n-v-r.')
     parser_update.set_defaults(command = update)
 
     # upload target takes one or more files as input
     parser_upload = subparsers.add_parser('upload',
                                           parents = [parser_newsources],
                                           conflict_handler = 'resolve',
-                                          help = 'Upload source files')
+                                          help = 'Upload source files',
+                                          description = 'This command will \
+                                          add a new source archive to the \
+                                          lookaside cache.  The sources and \
+                                          .gitignore file will be updated \
+                                          with the new file(s).')
     parser_upload.set_defaults(command = new_sources, replace = False)
 
     # Get version and release
     parser_verrel = subparsers.add_parser('verrel',
-                                          help = 'Print the'
-                                          ' name-version-release')
+                                          help = 'Print the '
+                                          'name-version-release')
     parser_verrel.set_defaults(command = verrel)
 
     if not generate_manpage:

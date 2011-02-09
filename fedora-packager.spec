@@ -17,10 +17,12 @@ BuildRequires:  python-devel
 Requires:       koji bodhi-client 
 Requires:       rpm-build rpmdevtools rpmlint
 Requires:       mock curl openssh-clients
-Requires:       pyOpenSSL python-pycurl
+Requires:       pyOpenSSL
 Requires:       redhat-rpm-config
-Requires:       python-offtrac
 Requires:       fedpkg = %{version}-%{release}
+Requires:       fedora-cert = %{version}-%{release}
+Requires:       ykpers
+Requires:       ykpers
 
 BuildArch:      noarch
 
@@ -30,20 +32,33 @@ Set of utilities useful for a fedora packager in setting up their environment.
 %package     -n fedpkg
 Summary:        fedora utility for working with dist-git
 Group:          Applications/Databases
-Requires:       GitPython >= 0.2.0, python-argparse, curl
-Requires:       fedora-packager = %{version}-%{release}
+Requires:       GitPython >= 0.2.0, python-argparse
+Requires:       python-pycurl, koji, python-fedora
+Requires:       fedora-cert = %{version}-%{release}
+Requires:       python-offtrac
 %if 0%{?rhel} == 5 || 0%{?rhel} == 4
 Requires:       python-kitchen
-Requires:       python-hashlib
 %endif
 
 %description -n fedpkg
 Provides the fedpkg command for working with dist-git
 
 
+%package     -n fedora-cert
+Summary:        fedora-cert tool and python library
+Group:          Applications/Databases
+Requires:       pyOpenSSL
+Requires:       python-pycurl
+%if 0%{?rhel} == 5 || 0%{?rhel} == 4
+Requires:       python-kitchen
+%endif
+
+%description -n fedora-cert
+Provides fedora-cert and the fedora_cert python library
+
+
 %prep
 %setup -q
-
 
 %build
 %configure
@@ -62,12 +77,19 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc COPYING TODO AUTHORS ChangeLog
 %{_bindir}/*
+%{_sbindir}/*
 %exclude %{_bindir}/fedpkg
+%exclude %{_bindir}/fedora-cert
+
+%files -n fedora-cert
+%defattr(-,root,root,-)
+%doc COPYING TODO AUTHORS ChangeLog
+%{_bindir}/fedora-cert
 %{python_sitelib}/fedora_cert
 
 %files -n fedpkg
-%doc COPYING TODO AUTHORS ChangeLog
 %defattr(-,root,root,-)
+%doc COPYING TODO AUTHORS ChangeLog
 %{_bindir}/fedpkg
 %{python_sitelib}/pyfedpkg
 %{_sysconfdir}/bash_completion.d

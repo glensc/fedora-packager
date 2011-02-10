@@ -23,6 +23,9 @@ import re
 import hashlib
 import textwrap
 
+# See/put non-standard python imports down in __main__.  This lets us
+# generate the man page without needing extra stuff at build time.
+
 # Define packages which belong to specific secondary arches
 # This is ugly and should go away.  A better way to do this is to have a list
 # of secondary arches, and then check the spec file for ExclusiveArch that
@@ -1442,15 +1445,16 @@ if __name__ == '__main__':
             print('Could not get current path, have you deleted it?')
             sys.exit(1)
 
+    # Import non-standard python stuff here
+    import fedora_cert
+    import koji
+    import pyfedpkg
+
     # setup the logger -- This logger will take things of INFO or DEBUG and
     # log it to stdout.  Anything above that (WARN, ERROR, CRITICAL) will go
     # to stderr.  Normal operation will show anything INFO and above.
     # Quiet hides INFO, while Verbose exposes DEBUG.  In all cases WARN or
     # higher are exposed (via stderr).
-
-    import fedora_cert
-    import koji
-    import pyfedpkg
     log = pyfedpkg.log
 
     if args.v:

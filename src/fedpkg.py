@@ -1161,6 +1161,7 @@ defined, packages will be built sequentially.""")
                              default = False,
                              action = 'store_true',
                              help = 'Display explanations for reported messages')
+    parser_lint.set_defaults(command = lint)
 
     # Build locally
     parser_local = subparsers.add_parser('local',

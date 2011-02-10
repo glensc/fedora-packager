@@ -1,3 +1,11 @@
+* Wed Feb 09 2011 Jesse Keating <jkeating@redhat.com> - 0.5.5.0-1
+- rearrnage import and drop hints about why (jkeating)
+- Move some module imports to command runtime (hun)
+- Move actual man page generation call (hun)
+- Move location/name of man_page module (hun)
+- Re-add 'lint' command hookup into argparse magic (hun)
+- Catch errors parsing spec to get name. (#676383) (jkeating)
+
 * Wed Feb 09 2011 Jesse Keating <jkeating@redhat.com> - 0.5.4.0-1
 - Add changes from dist-git (jkeating)
 - Re-arrange verify-files and slight fixups (jkeating)

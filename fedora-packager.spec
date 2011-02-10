@@ -3,7 +3,7 @@
 %endif
 
 Name:           fedora-packager
-Version:        0.5.4.0
+Version:        0.5.5.0
 Release:        1%{?dist}
 Summary:        Tools for setting up a fedora maintainer environment
 
@@ -96,6 +96,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Feb 09 2011 Jesse Keating <jkeating@redhat.com> - 0.5.5.0-1
+- Re-add 'lint' command hookup into argparse magic (hun)
+- Catch errors parsing spec to get name. (#676383) (jkeating)
+
 * Wed Feb 09 2011 Jesse Keating <jkeating@redhat.com> - 0.5.4.0-1
 - Re-arrange verify-files and slight fixups (jkeating)
 - Add "fedpkg verify-files" command (hun)

@@ -11,13 +11,10 @@
 # the full text of the license.
 
 import argparse
-import pyfedpkg
-import fedora_cert
 import os
 import sys
 import getpass
 import logging
-import koji
 import xmlrpclib
 import time
 import random
@@ -1450,7 +1447,12 @@ if __name__ == '__main__':
     # to stderr.  Normal operation will show anything INFO and above.
     # Quiet hides INFO, while Verbose exposes DEBUG.  In all cases WARN or
     # higher are exposed (via stderr).
+
+    import fedora_cert
+    import koji
+    import pyfedpkg
     log = pyfedpkg.log
+
     if args.v:
         log.setLevel(logging.DEBUG)
     elif args.q:

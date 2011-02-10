@@ -84,7 +84,7 @@ CLEANFILES += fedpkg.1
 man1_MANS = fedpkg.1
 fedpkg.1: fedpkg
 	tmpfile="fedpkg.1.$$$$"; \
-	if env PYTHONPATH=$(srcdir)/src python -c 'import fedpkg; fedpkg.parse_cmdline(True)' > "$$tmpfile"; then \
+	if $(PYTHON) $(srcdir)/src/fedpkg_man_page.py > "$$tmpfile"; then \
 		mv -f "$$tmpfile" "$@"; \
 	else \
 		rm -f "$$tmpfile"; \

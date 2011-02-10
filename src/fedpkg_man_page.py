@@ -144,3 +144,8 @@ def generate(parser, subparsers):
         mf.write(h)
 
     man_file.write(man_footer)
+
+
+if __name__ == '__main__':
+    import fedpkg
+    fedpkg.parse_cmdline(generate_manpage = True)

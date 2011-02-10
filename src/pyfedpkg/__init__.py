@@ -108,6 +108,8 @@ def _name_from_spec(spec):
         output, error = proc.communicate()
     except OSError, e:
         raise FedpkgError(e)
+    if error:
+        raise FedpkgError(error)
     return output.split()[0]
 
 def _run_command(cmd, shell=False, env=None, pipe=[], cwd=None):

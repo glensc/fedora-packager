@@ -94,8 +94,8 @@ fedpkg.1: fedpkg
 	fi
 endif
 
-noinst_PYTHON = $(srcdir)/src/pyfedpkg/man_page.py
-pyfedpkg_PYTHON = $(filter-out $(noinst_PYTHON),$(wildcard $(srcdir)/src/pyfedpkg/*.py))
+noinst_PYTHON = $(srcdir)/src/fedpkg_man_page.py
+pyfedpkg_PYTHON = $(wildcard $(srcdir)/src/pyfedpkg/*.py)
 fedora_cert_PYTHON = $(wildcard $(srcdir)/src/fedora_cert/*.py)
 
 fedora_certdir = $(pythondir)/fedora_cert

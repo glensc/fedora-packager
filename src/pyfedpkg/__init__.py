@@ -72,7 +72,7 @@ def _find_branch(path=None, repo=None):
         try:
             repo = git.Repo(path)
         except git.errors.InvalidGitRepositoryError:
-            raise FedpkgError('%s is not a valid repo' % path)
+            raise FedpkgError('%s is not a valid repo (no git checkout)' % path)
     return(repo.active_branch.name)
 
 # Define some helper functions, they start with _
@@ -283,7 +283,7 @@ def _list_branches(path=None, repo=None):
         try:
             repo = git.Repo(path)
         except git.errors.InvalidGitRepositoryError:
-            raise FedpkgError('%s is not a valid repo' % path)
+            raise FedpkgError('%s is not a valid repo (no git checkout)' % path)
     log.debug('Listing refs')
     refs = repo.refs
     # Sort into local and remote branches
@@ -624,7 +624,7 @@ def import_srpm(srpm, path=None):
     try:
         repo = git.Repo(path)
     except git.errors.InvalidGitRepositoryError:
-        raise FedpkgError('%s is not a valid repo' % path)
+        raise FedpkgError('%s is not a valid repo (no git checkout)' % path)
     if repo.is_dirty():
         raise FedpkgError('There are uncommitted changes in your repo')
     # Get the details of the srpm
@@ -705,7 +705,7 @@ def new(path=None):
     try:
         repo = git.Repo(path)
     except git.errors.InvalidGitRepositoryError:
-        raise FedpkgError('%s is not a valid repo' % path)
+        raise FedpkgError('%s is not a valid repo (no git checkout)' % path)
     # Find the latest tag
     tag = repo.git.describe('--tags', '--abbrev=0')
     # Now get the diff
@@ -779,7 +779,7 @@ def sources(path, outdir=None):
             spec = f
             break
     if not spec:
-        raise FedpkgError('%s is not a valid repo' % path)
+        raise FedpkgError('%s is not a valid repo (no .spec found)' % path)
     module = _name_from_spec(os.path.join(path, spec))
     try:
         archives = open(os.path.join(path, 'sources'),
@@ -849,7 +849,7 @@ def switch_branch(branch, path=None):
     try:
         repo = git.Repo(path)
     except git.errors.InvalidGitRepositoryError:
-        raise FedpkgError('%s is not a valid repo' % path)
+        raise FedpkgError('%s is not a valid repo (no git checkout)' % path)
 
     # See if the repo is dirty first
     if repo.is_dirty():
@@ -1106,7 +1106,7 @@ class PackageModule:
         try:
             self.repo = git.Repo(path)
         except git.errors.InvalidGitRepositoryError:
-            raise FedpkgError('%s is not a valid repo' % path)
+            raise FedpkgError('%s is not a valid repo (no git checkout)' % path)
         # Find the branch and set things based from that
         # Still requires a 'branch' file in each branch
         if dist:

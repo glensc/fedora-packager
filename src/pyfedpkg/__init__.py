@@ -14,11 +14,7 @@ import sys
 import shutil
 import re
 import pycurl
-if sys.version_info[0:2] >= (2, 5):
-    import subprocess
-else:
-    # We need a subprocess that has check_call
-    from kitchen.pycompat27 import subprocess
+import subprocess
 import hashlib
 import koji
 import rpm

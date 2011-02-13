@@ -36,8 +36,8 @@ import offtrac
 LOOKASIDE = 'http://distfiles.pld-linux.org'
 LOOKASIDEHASH = 'md5'
 LOOKASIDE_CGI = 'https://pkgs.fedoraproject.org/repo/pkgs/upload.cgi'
-GITBASEURL = 'ssh://%(user)s@pkgs.fedoraproject.org/%(module)s'
-ANONGITURL = 'git@github.com:pld-linux/%(module)s.git'
+GITBASEURL = 'git@github.com:pld-linux/%(module)s.git'
+ANONGITURL = 'http://github.com/pld-linux/%(module)s.git'
 TRACBASEURL = 'https://%(user)s:%(password)s@fedorahosted.org/rel-eng/login/xmlrpc'
 UPLOADEXTS = ['tar', 'gz', 'bz2', 'lzma', 'xz', 'Z', 'zip', 'tff', 'bin',
               'tbz', 'tbz2', 'tgz', 'tlz', 'txz', 'pdf', 'rpm', 'jar', 'war',

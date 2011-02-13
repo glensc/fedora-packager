@@ -253,7 +253,6 @@ def get_rpm_header(f, ts=None):
     hdr = ts.hdrFromFdno(fo.fileno())
     if fo is not f:
         fo.close()
-    print hdr['filenames']
     return hdr
 
 def _get_build_arches_from_srpm(srpm, arches):

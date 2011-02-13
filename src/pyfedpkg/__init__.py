@@ -33,11 +33,11 @@ import offtrac
 
 
 # Define some global variables, put them here to make it easy to change
-LOOKASIDE = 'http://pkgs.fedoraproject.org/repo/pkgs'
+LOOKASIDE = 'http://distfiles.pld-linux.org'
 LOOKASIDEHASH = 'md5'
 LOOKASIDE_CGI = 'https://pkgs.fedoraproject.org/repo/pkgs/upload.cgi'
 GITBASEURL = 'ssh://%(user)s@pkgs.fedoraproject.org/%(module)s'
-ANONGITURL = 'git://pkgs.fedoraproject.org/%(module)s'
+ANONGITURL = 'git@github.com:pld-linux/%(module)s.git'
 TRACBASEURL = 'https://%(user)s:%(password)s@fedorahosted.org/rel-eng/login/xmlrpc'
 UPLOADEXTS = ['tar', 'gz', 'bz2', 'lzma', 'xz', 'Z', 'zip', 'tff', 'bin',
               'tbz', 'tbz2', 'tgz', 'tlz', 'txz', 'pdf', 'rpm', 'jar', 'war',
@@ -672,7 +672,7 @@ def import_srpm(srpm, path=None):
         raise FedpkgError("Got an error from rpm2cpio: %s" % err)
 
     # And finally add all the files we know about (and our stock files)
-    for file in ('.gitignore', 'sources'):
+    for file in ('.gitignore'):
         if not os.path.exists(file):
             # Create the file
             open(file, 'w').close()
@@ -766,6 +766,19 @@ def retire(path, message=None):
 
     return
 
+def _spec_archives(package):
+    """parse sources from .spec"""
+    # currently uses builder and adopts output for fedpkg format
+#     $ builder --source-distfiles-paths eventum
+#     by-md5/7/e/7eb5055260fcf096bc48b0e6c4758e3b/eventum-2.3.1.tar.gz
+#     by-md5/d/e/deb6eeb2552ba757d3a949ed10c4107d/updown2.gif
+    proc = subprocess.Popen(['builder -sdp %s' % package], shell=True, stdout=subprocess.PIPE)
+    a = []
+    for l in proc.stdout.readlines():
+        (md5, file) = l.rstrip().split('/')[-2:]
+        a.append('%s  %s' % (md5, file))
+    return a
+
 def sources(path, outdir=None):
     """Download source files"""
 
@@ -782,8 +795,7 @@ def sources(path, outdir=None):
         raise FedpkgError('%s is not a valid repo (no .spec found)' % path)
     module = _name_from_spec(os.path.join(path, spec))
     try:
-        archives = open(os.path.join(path, 'sources'),
-                        'r').readlines()
+        archives = _spec_archives(spec)
     except IOError, e:
         raise FedpkgError('%s is not a valid repo: %s' % (path, e))
     # Default to putting the files where the module is
@@ -803,8 +815,14 @@ def sources(path, outdir=None):
             if _verify_file(outfile, csum, LOOKASIDEHASH):
                 continue
         log.info("Downloading %s" % (file))
-        url = '%s/%s/%s/%s/%s' % (LOOKASIDE, module, file.replace(' ', '%20'),
-                                  csum, file.replace(' ', '%20'))
+        url = '%(lookaside)s/by-md5/%(csum1)s/%(csum2)s/%(csum)s/%(file)s' % {
+                'lookaside': LOOKASIDE,
+                'module': module,
+                'file': file.replace(' ', '%20'),
+                'csum': csum,
+                'csum1': csum[0],
+                'csum2': csum[1],
+        }
         # There is some code here for using pycurl, but for now,
         # just use subprocess
         #output = open(file, 'wb')
@@ -1158,10 +1176,8 @@ class PackageModule:
             raise FedpkgError('Could not parse spec file.')
         self.nvr = '%s-%s-%s' % (self.module, self.ver, self.rel)
         # Define the hashtype to use for srpms
-        # Default to sha256 hash type
-        self.hashtype = 'sha256'
-        if self.branch.startswith('el5') or self.branch.startswith('el4'):
-            self.hashtype = 'md5'
+        # Default to md5 hash type
+        self.hashtype = 'md5'
  
     def build(self, skip_tag=False, scratch=False, background=False,
               url=None, chain=None, arches=None):

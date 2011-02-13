@@ -80,8 +80,9 @@ ppc-koji: $(srcdir)/src/secondary-koji
 	install -p -m 755 -T $(srcdir)/src/secondary-koji ppc-koji
 
 if HAVE_PYTHON
-CLEANFILES += fedpkg.1
 man1_MANS = fedpkg.1
+CLEANFILES += $(man1_MANS)
+EXTRA_DIST += $(man1_MANS)
 fedpkg.1: fedpkg
 	tmpfile="fedpkg.1.$$$$"; \
 	if $(PYTHON) $(srcdir)/src/fedpkg_man_page.py > "$$tmpfile"; then \
@@ -92,6 +93,7 @@ fedpkg.1: fedpkg
 		echo "Error generating man page: $$s"; \
 		exit "$$s"; \
 	fi
+
 endif
 
 noinst_PYTHON = $(srcdir)/src/fedpkg_man_page.py

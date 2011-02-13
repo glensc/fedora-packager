@@ -612,13 +612,15 @@ def new_sources(args):
         if not os.path.exists(file):
             log.error('File does not exist: %s' % file)
             sys.exit(1)
+    user = getuser(args.user)
+    passwd = getpass.getpass('Password for %s: ' % user)
     try:
         mymodule = pyfedpkg.PackageModule(args.path, args.dist)
-        mymodule.upload(args.files, replace=args.replace)
+        mymodule.upload(args.files, replace=args.replace, user=user, passwd=passwd)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not upload new sources: %s' % e)
         sys.exit(1)
-    print("Source upload succeeded. Don't forget to commit the sources file")
+    print("Source upload succeeded. Don't forget to commit the .spec file")
 
 def patch(args):
     # not implimented

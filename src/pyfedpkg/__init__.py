@@ -36,6 +36,7 @@ import offtrac
 LOOKASIDE = 'http://distfiles.pld-linux.org'
 LOOKASIDEHASH = 'md5'
 LOOKASIDE_CGI = 'https://pkgs.fedoraproject.org/repo/pkgs/upload.cgi'
+LOOKASIDE_UPLOAD = 'ftp://dropin.pld-linux.org/'
 GITBASEURL = 'git@github.com:pld-linux/%(module)s.git'
 ANONGITURL = 'http://github.com/pld-linux/%(module)s.git'
 TRACBASEURL = 'https://%(user)s:%(password)s@fedorahosted.org/rel-eng/login/xmlrpc'
@@ -941,6 +942,7 @@ class Lookaside(object):
         return curl
 
     def file_exists(self, pkg_name, filename, md5sum):
+        return False
         """
         Return True if the given file exists in the lookaside cache, False
         if not.
@@ -1680,7 +1682,7 @@ class PackageModule:
         log.debug('Task %s created' % ticket)
         return ticket
 
-    def upload(self, files, replace=False):
+    def upload(self, files, replace=False, user=None, passwd=None):
         """Upload source file(s) in the lookaside cache
 
         Can optionally replace the existing tracked sources
@@ -1689,14 +1691,6 @@ class PackageModule:
 
         oldpath = os.getcwd()
         os.chdir(self.path)
-
-        # Decide to overwrite or append to sources:
-        if replace:
-            sources = []
-            sources_file = open('sources', 'w')
-        else:
-            sources = open('sources', 'r').readlines()
-            sources_file = open('sources', 'a')
 
         # Will add new sources to .gitignore if they are not already there.
         gitignore = GitIgnore(os.path.join(self.path, '.gitignore'))
@@ -1708,8 +1702,6 @@ class PackageModule:
             file_hash = _hash_file(f, self.lookasidehash)
             log.info("Uploading: %s  %s" % (file_hash, f))
             file_basename = os.path.basename(f)
-            if not "%s  %s\n" % (file_hash, file_basename) in sources:
-                sources_file.write("%s  %s\n" % (file_hash, file_basename))
 
             # Add this file to .gitignore if it's not already there:
             if not gitignore.match(file_basename):
@@ -1727,20 +1719,18 @@ class PackageModule:
                 # directly.
                 # This command is stolen from the dist-cvs make file
                 # It assumes and hard codes the cert file name/location
-                cmd = ['curl', '-k', '--cert',
-                       os.path.expanduser('~/.fedora.cert'), '--fail', '-o',
-                       '/dev/null', '--show-error', '--progress-bar', '-F',
-                       'name=%s' % self.module, '-F', 'md5sum=%s' % file_hash,
-                       '-F', 'file=@%s' % f, LOOKASIDE_CGI]
+                cmd = ['curl',
+                       '--fail', '-o',
+                       '/dev/null', '--show-error', '--progress-bar',
+                       '--user', '%s:%s' % (user, passwd),
+                       '-T', f, LOOKASIDE_UPLOAD]
                 _run_command(cmd)
                 uploaded.append(file_basename)
-
-        sources_file.close()
 
         # Write .gitignore with the new sources if anything changed:
         gitignore.write()
 
-        rv = self.repo.index.add(['sources', '.gitignore'])
+        rv = self.repo.index.add(['.gitignore'])
 
         # Change back to original working dir:
         os.chdir(oldpath)

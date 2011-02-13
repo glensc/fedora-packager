@@ -1804,7 +1804,7 @@ class PackageModule:
             # throw out non patches
             if not file.endswith('.patch'):
                 continue
-            if file not in spec:
+            if file not in spec and file.replace(self.module, '%{name}') not in spec:
                 unused.append(file)
         return unused
 

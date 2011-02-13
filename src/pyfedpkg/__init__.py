@@ -241,6 +241,21 @@ def _newer(file1, file2):
 
     return os.path.getmtime(file1) > os.path.getmtime(file2)
 
+def get_rpm_header(f, ts=None):
+    """Return the rpm header."""
+    if ts is None:
+        ts = rpm.TransactionSet()
+        ts.setVSFlags(rpm._RPMVSF_NOSIGNATURES|rpm._RPMVSF_NODIGESTS)
+    if isinstance(f, (str, unicode)):
+        fo = file(f, "r")
+    else:
+        fo = f
+    hdr = ts.hdrFromFdno(fo.fileno())
+    if fo is not f:
+        fo.close()
+    print hdr['filenames']
+    return hdr
+
 def _get_build_arches_from_srpm(srpm, arches):
     """Given the path to an srpm, determine the possible build arches
 
@@ -249,8 +264,8 @@ def _get_build_arches_from_srpm(srpm, arches):
     """
 
     archlist = arches
-    hdr = koji.get_rpm_header(srpm)
-    if hdr[rpm.RPMTAG_SOURCEPACKAGE] != 1:
+    hdr = get_rpm_header(srpm)
+    if hdr[rpm.RPMTAG_SOURCERPM]:
         raise FedpkgError('%s is not a source package.' % srpm)
     buildarchs = hdr[rpm.RPMTAG_BUILDARCHS]
     exclusivearch = hdr[rpm.RPMTAG_EXCLUSIVEARCH]

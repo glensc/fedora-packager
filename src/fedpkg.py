@@ -45,373 +45,15 @@ class StdoutFilter(logging.Filter):
         # If the record level is 20 (INFO) or lower, let it through
         return record.levelno <= logging.INFO
 
-# Add a class stolen from /usr/bin/koji to watch tasks
-# this was cut/pasted from koji, and then modified for local use.
-# The formatting is koji style, not the stile of this file.  Do not use these
-# functions as a style guide.
-# This is fragile and hopefully will be replaced by a real kojiclient lib.
-class TaskWatcher(object):
-
-    def __init__(self,task_id,session,level=0,quiet=False):
-        self.id = task_id
-        self.session = session
-        self.info = None
-        self.level = level
-        self.quiet = quiet
-
-    #XXX - a bunch of this stuff needs to adapt to different tasks
-
-    def str(self):
-        if self.info:
-            label = koji.taskLabel(self.info)
-            return "%s%d %s" % ('  ' * self.level, self.id, label)
-        else:
-            return "%s%d" % ('  ' * self.level, self.id)
-
-    def __str__(self):
-        return self.str()
-
-    def get_failure(self):
-        """Print infomation about task completion"""
-        if self.info['state'] != koji.TASK_STATES['FAILED']:
-            return ''
-        error = None
-        try:
-            result = self.session.getTaskResult(self.id)
-        except (xmlrpclib.Fault,koji.GenericError),e:
-            error = e
-        if error is None:
-            # print "%s: complete" % self.str()
-            # We already reported this task as complete in update()
-            return ''
-        else:
-            return '%s: %s' % (error.__class__.__name__, str(error).strip())
-
-    def update(self):
-        """Update info and log if needed.  Returns True on state change."""
-        if self.is_done():
-            # Already done, nothing else to report
-            return False
-        last = self.info
-        self.info = self.session.getTaskInfo(self.id, request=True)
-        if self.info is None:
-            log.error("No such task id: %i" % self.id)
-            sys.exit(1)
-        state = self.info['state']
-        if last:
-            #compare and note status changes
-            laststate = last['state']
-            if laststate != state:
-                log.info("%s: %s -> %s" % (self.str(),
-                                           self.display_state(last),
-                                           self.display_state(self.info)))
-                return True
-            return False
-        else:
-            # First time we're seeing this task, so just show the current state
-            log.info("%s: %s" % (self.str(), self.display_state(self.info)))
-            return False
-
-    def is_done(self):
-        if self.info is None:
-            return False
-        state = koji.TASK_STATES[self.info['state']]
-        return (state in ['CLOSED','CANCELED','FAILED'])
-
-    def is_success(self):
-        if self.info is None:
-            return False
-        state = koji.TASK_STATES[self.info['state']]
-        return (state == 'CLOSED')
-
-    def display_state(self, info):
-        # We can sometimes be passed a task that is not yet open, but
-        # not finished either.  info would be none.
-        if not info:
-            return 'unknown'
-        if info['state'] == koji.TASK_STATES['OPEN']:
-            if info['host_id']:
-                host = self.session.getHost(info['host_id'])
-                return 'open (%s)' % host['name']
-            else:
-                return 'open'
-        elif info['state'] == koji.TASK_STATES['FAILED']:
-            return 'FAILED: %s' % self.get_failure()
-        else:
-            return koji.TASK_STATES[info['state']].lower()
-
 # Add a simple function to print usage, for the 'help' command
 def usage(args):
     parser.print_help()
-
-# Define our stub functions
-def _is_secondary(module):
-    """Check a list to see if the package is a secondary arch package"""
-
-    for arch in SECONDARY_ARCH_PKGS.keys():
-        if module in SECONDARY_ARCH_PKGS[arch]:
-            return arch
-    return None
-
-def _get_secondary_config(mymodule):
-    """Return the right config for a given secondary arch"""
-
-    arch = _is_secondary(mymodule.module)
-    if arch:
-        if arch == 'ppc' and mymodule.distvar == 'fedora' and \
-           mymodule.distval < '13':
-            return None
-        return os.path.expanduser('~/.koji/%s-config' % arch)
-    else:
-        return None
-
-def _display_tasklist_status(tasks):
-    free = 0
-    open = 0
-    failed = 0
-    done = 0
-    for task_id in tasks.keys():
-        status = tasks[task_id].info['state']
-        if status == koji.TASK_STATES['FAILED']:
-            failed += 1
-        elif status == koji.TASK_STATES['CLOSED'] or status == koji.TASK_STATES['CANCELED']:
-            done += 1
-        elif status == koji.TASK_STATES['OPEN'] or status == koji.TASK_STATES['ASSIGNED']:
-            open += 1
-        elif status == koji.TASK_STATES['FREE']:
-            free += 1
-    log.info("  %d free  %d open  %d done  %d failed" % (free, open, done, failed))
-
-def _display_task_results(tasks):
-    for task in [task for task in tasks.values() if task.level == 0]:
-        state = task.info['state']
-        task_label = task.str()
-
-        if state == koji.TASK_STATES['CLOSED']:
-            log.info('%s completed successfully' % task_label)
-        elif state == koji.TASK_STATES['FAILED']:
-            log.info('%s failed' % task_label)
-        elif state == koji.TASK_STATES['CANCELED']:
-            log.info('%s was canceled' % task_label)
-        else:
-            # shouldn't happen
-            log.info('%s has not completed' % task_label)
-
-def _watch_koji_tasks(session, tasklist, quiet=False):
-    if not tasklist:
-        return
-    log.info('Watching tasks (this may be safely interrupted)...')
-    # Place holder for return value
-    rv = 0
-    try:
-        tasks = {}
-        for task_id in tasklist:
-            tasks[task_id] = TaskWatcher(task_id, session, quiet=quiet)
-        while True:
-            all_done = True
-            for task_id,task in tasks.items():
-                changed = task.update()
-                if not task.is_done():
-                    all_done = False
-                else:
-                    if changed:
-                        # task is done and state just changed
-                        if not quiet:
-                            _display_tasklist_status(tasks)
-                    if not task.is_success():
-                        rv = 1
-                for child in session.getTaskChildren(task_id):
-                    child_id = child['id']
-                    if not child_id in tasks.keys():
-                        tasks[child_id] = TaskWatcher(child_id, session, task.level + 1, quiet=quiet)
-                        tasks[child_id].update()
-                        # If we found new children, go through the list again,
-                        # in case they have children also
-                        all_done = False
-            if all_done:
-                if not quiet:
-                    print
-                    _display_task_results(tasks)
-                break
-
-            time.sleep(1)
-    except (KeyboardInterrupt):
-        if tasks:
-            log.info(
-"""\nTasks still running. You can continue to watch with the 'koji watch-task' command.
-Running Tasks:
-%s""" % '\n'.join(['%s: %s' % (t.str(), t.display_state(t.info))
-                   for t in tasks.values() if not t.is_done()]))
-        # /us/rbin/koji considers a ^c while tasks are running to be a
-        # non-zero exit.  I don't quite agree, so I comment it out here.
-        #rv = 1
-    return rv
-
-# Stole these three functions from /usr/bin/koji
-def _format_size(size):
-    if (size / 1073741824 >= 1):
-        return "%0.2f GiB" % (size / 1073741824.0)
-    if (size / 1048576 >= 1):
-        return "%0.2f MiB" % (size / 1048576.0)
-    if (size / 1024 >=1):
-        return "%0.2f KiB" % (size / 1024.0)
-    return "%0.2f B" % (size)
-
-def _format_secs(t):
-    h = t / 3600
-    t = t % 3600
-    m = t / 60
-    s = t % 60
-    return "%02d:%02d:%02d" % (h, m, s)
-
-def _progress_callback(uploaded, total, piece, time, total_time):
-    percent_done = float(uploaded)/float(total)
-    percent_done_str = "%02d%%" % (percent_done * 100)
-    data_done = _format_size(uploaded)
-    elapsed = _format_secs(total_time)
-
-    speed = "- B/sec"
-    if (time):
-        if (uploaded != total):
-            speed = _format_size(float(piece)/float(time)) + "/sec"
-        else:
-            speed = _format_size(float(total)/float(total_time)) + "/sec"
-
-    # write formated string and flush
-    sys.stdout.write("[% -36s] % 4s % 8s % 10s % 14s\r" % ('='*(int(percent_done*36)), percent_done_str, elapsed, data_done, speed))
-    sys.stdout.flush()
-
-def build(args):
-    # We may not actually nave an srpm arg if we come directly from the build task
-    if hasattr(args, 'srpm') and args.srpm and not args.scratch:
-        log.error('Non-scratch builds cannot be from srpms.')
-        sys.exit(1)
-    # We may have gotten arches by way of scratch build, so handle them
-    arches = None
-    if hasattr(args, 'arches'):
-        arches = args.arches
-    # Place holder for if we build with an uploaded srpm or not
-    url = None
-    # See if this is a chain or not
-    chain = None
-    if hasattr(args, 'chain'):
-        chain = args.chain
-    user = getuser(args.user)
-    # Need to do something with BUILD_FLAGS or KOJI_FLAGS here for compat
-    try:
-        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
-    except pyfedpkg.FedpkgError, e:
-        # This error needs a better print out
-        log.error('Could not use module: %s' % e)
-        sys.exit(1)
-    kojiconfig = _get_secondary_config(mymodule)
-    if args.target:
-        mymodule.target = args.target
-    try:
-        mymodule.init_koji(user, kojiconfig)
-    except pyfedpkg.FedpkgError, e:
-        log.error('Could not log into koji: %s' % e)
-        sys.exit(1)
-    # handle uploading the srpm if we got one
-    if hasattr(args, 'srpm') and args.srpm:
-        # Figure out if we want a verbose output or not
-        callback = None
-        if not args.q:
-            callback = _progress_callback
-        # define a unique path for this upload.  Stolen from /usr/bin/koji
-        uniquepath = 'cli-build/%r.%s' % (time.time(),
-                                         ''.join([random.choice(string.ascii_letters)
-                                                 for i in range(8)]))
-        # Should have a try here, not sure what errors we'll get yet though
-        mymodule.koji_upload(args.srpm, uniquepath, callback=callback)
-        if not args.q:
-            # print an extra blank line due to callback oddity
-            print('')
-        url = '%s/%s' % (uniquepath, os.path.basename(args.srpm))
-    # Should also try this, again not sure what errors to catch
-    try:
-        task_id = mymodule.build(args.skip_tag, args.scratch, args.background,
-                                 url, chain, arches)
-    except pyfedpkg.FedpkgError, e:
-        log.error('Could not initiate build: %s' % e)
-        sys.exit(1)
-    # Now that we have the task ID we need to deal with it.
-    if args.nowait:
-        # Log out of the koji session
-        mymodule.kojisession.logout()
-        return
-    # pass info off to our koji task watcher
-    try:
-        mymodule.kojisession.logout()
-        return _watch_koji_tasks(mymodule.kojisession, [task_id], quiet=args.q)
-    except:
-        # We could get an auth error if credentials have expired
-        # use exc_info here to get what kind of error this is
-        log.error('Could not watch build: %s' % sys.exc_info()[0])
-        sys.exit(1)
-
-def chainbuild(args):
-    try:
-        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
-    except pyfedpkg.FedpkgError, e:
-        log.error('Could not use module %s' % e)
-        sys.exit(1)
-    # make sure we don't try to chain ourself
-    if mymodule.module in args.package:
-        log.error('%s must not be in the chain' % mymodule.module)
-        sys.exit(1)
-    # make sure we didn't get an empty chain
-    if args.package == [':']:
-        log.error('Must provide at least one dependency build')
-        sys.exit(1)
-    # Break the chain up into sections
-    urls = []
-    build_set = []
-    log.debug('Processing chain %s' % ' '.join(args.package))
-    for component in args.package:
-        if component == ':':
-            # We've hit the end of a set, add the set as a unit to the
-            # url list and reset the build_set.
-            urls.append(build_set)
-            log.debug('Created a build set: %s' % ' '.join(build_set))
-            build_set = []
-        else:
-            # Figure out the scm url to build from package name
-            try:
-                hash = pyfedpkg.get_latest_commit(component)
-                url = pyfedpkg.ANONGITURL % {'module':
-                                             component} + '#%s' % hash
-            except pyfedpkg.FedpkgError, e:
-                log.error('Could not get a build url for %s: %s'
-                          % (component, e))
-                sys.exit(1)
-            # If there are no ':' in the chain list, treat each object as an
-            # individual chain
-            if ':' in args.package:
-                build_set.append(url)
-            else:
-                urls.append([url])
-                log.debug('Created a build set: %s' % url)
-    # Take care of the last build set if we have one
-    if build_set:
-        log.debug('Created a build set: %s' % ' '.join(build_set))
-        urls.append(build_set)
-    # pass it off to build
-    args.chain = urls
-    args.skip_tag = False
-    args.scratch = False
-    build(args)
 
 def getuser(user=None):
     if user:
         return user
     else:
-        try:
-            return fedora_cert.read_user_cert()
-        except:
-            log.debug('Could not read Fedora cert, using login name')
-            return os.getlogin()
-
+        return os.getlogin()
 
 def check(args):
     # not implimented; Not planned
@@ -578,27 +220,6 @@ def local(args):
         log.error('Could not build locally: %s' % e)
         sys.exit(1)
 
-def mockbuild(args):
-    try:
-        pyfedpkg.sources(args.path)
-    except pyfedpkg.FedpkgError, e:
-        log.error('Could not download sources: %s' % e)
-        sys.exit(1)
-
-    # Pick up any mockargs from the env
-    mockargs = []
-    try:
-        mockargs = os.environ['MOCKARGS'].split()
-    except KeyError:
-        # there were no args
-        pass
-    try:
-        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
-        return mymodule.mockbuild(mockargs)
-    except pyfedpkg.FedpkgError, e:
-        log.error('Could not run mockbuild: %s' % e)
-        sys.exit(1)
-
 def new(args):
     try:
         print(pyfedpkg.new(args.path))
@@ -659,12 +280,6 @@ def retire(args):
         sys.exit(1)
     if args.push:
         push()
-
-def scratchbuild(args):
-    # A scratch build is just a build with --scratch
-    args.scratch = True
-    args.skip_tag = False
-    build(args)
 
 def sources(args):
     try:
@@ -735,21 +350,6 @@ def tag(args):
             log.error('Coult not create a tag: %s' % e)
             sys.exit(1)
 
-def tagrequest(args):
-    user = getuser(args.user)
-    passwd = getpass.getpass('Password for %s: ' % user)
-
-    if not args.desc:
-        args.desc = raw_input('\nAdd a description to your request: ')
-
-    try:
-        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
-        ticket = mymodule.new_ticket(user, passasswd, args.desc, args.build)
-        print('Ticket #%s filed successfully' % ticket)
-    except pyfedpkg.FedpkgError, e:
-        print('Could not request a tag release: %s' % e)
-        sys.exit(1)
-
 def unusedfedpatches(args):
     # not implimented; not planned
     log.warning('Not implimented yet, got %s' % args)
@@ -762,86 +362,6 @@ def unusedpatches(args):
         log.error('Could not get unused patches: %s' % e)
         sys.exit(1)
     print('\n'.join(unused))
-
-def update(args):
-    """Submit a new update to bodhi"""
-    user = getuser(args.user)
-    try:
-        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
-    except pyfedpkg.FedpkgError, e:
-        log.error('Could not use module: %s' % e)
-        sys.exit(1)
-    nvr = '%s-%s-%s' % (mymodule.module, mymodule.ver, mymodule.rel)
-    template = """\
-    [ %(nvr)s ]
-
-    # bugfix, security, enhancement, newpackage (required)
-    type=
-
-    # testing, stable
-    request=testing
-
-    # Bug numbers: 1234,9876
-    bugs=%(bugs)s
-
-    # Description of your update
-    notes=Here is where you
-        give an explanation of
-        your update.
-
-    # Enable request automation based on the stable/unstable karma thresholds
-    autokarma=True
-    stable_karma=3
-    unstable_karma=-3
-
-    # Automatically close bugs when this marked as stable
-    close_bugs=True
-
-    # Suggest that users restart after update
-    suggest_reboot=False\
-    """
-
-    bodhi_args = {'nvr': nvr, 'bugs': ''}
-
-    # Extract bug numbers from the latest changelog entry
-    mymodule.clog()
-    clog = file('clog').read()
-    bugs = re.findall(r'#([0-9]*)', clog)
-    if bugs:
-        bodhi_args['bugs'] = ','.join(bugs)
-
-    template = textwrap.dedent(template) % bodhi_args
-
-    # Calculate the hash of the unaltered template
-    orig_hash = hashlib.new('sha1')
-    orig_hash.update(template)
-    orig_hash = orig_hash.hexdigest()
-
-    # Write out the template
-    out = file('bodhi.template', 'w')
-    out.write(template)
-    out.close()
-
-    # Open the template in a text editor
-    editor = os.getenv('EDITOR', 'vi')
-    pyfedpkg._run_command([editor, 'bodhi.template'], shell=True)
-
-    # If the template was changed, submit it to bodhi
-    hash = pyfedpkg._hash_file('bodhi.template', 'sha1')
-    if hash != orig_hash:
-        cmd = ['bodhi', '--new', '--release', mymodule.branch, '--file',
-               'bodhi.template', nvr, '--username', user]
-        try:
-            pyfedpkg._run_command(cmd, shell=True)
-        except pyfedpkg.FedpkgError, e:
-            log.error('Could not generate update request: %s' % e)
-            sys.exit(1)
-    else:
-        log.info('Bodhi update aborted!')
-
-    # Clean up
-    os.unlink('bodhi.template')
-    os.unlink('clog')
 
 def verify_files(args):
     try:
@@ -893,67 +413,6 @@ def parse_cmdline(generate_manpage = False):
     # Add help to -h and --help
     parser_help = subparsers.add_parser('help', help = 'Show usage')
     parser_help.set_defaults(command = usage)
-
-    # Add a common build parser to be used as a parent
-    parser_build_common = subparsers.add_parser('build_common',
-                                                add_help = False)
-    parser_build_common.add_argument('--nowait', action = 'store_true',
-                                     default = False,
-                                     help = "Don't wait on build")
-    parser_build_common.add_argument('--target',
-                                     default = None,
-                                     help = 'Define koji target to build into')
-    parser_build_common.add_argument('--background', action = 'store_true',
-                                     default = False,
-                                     help = 'Run the build at a lower priority')
-
-    # build target
-    parser_build = subparsers.add_parser('build',
-                                         help = 'Request build',
-                                         parents = [parser_build_common],
-                                         description = 'This command \
-                                         requests a build of the package \
-                                         in the build system.  By default \
-                                         it discovers the target to build for \
-                                         based on branch data, and uses the \
-                                         latest commit as the build source.')
-    parser_build.add_argument('--skip-tag', action = 'store_true',
-                              default = False,
-                              help = 'Do not attempt to tag package')
-    parser_build.add_argument('--scratch', action = 'store_true',
-                              default = False,
-                              help = 'Perform a scratch build')
-    parser_build.add_argument('--srpm',
-                              help = 'Build from an srpm.  Requires --scratch')
-    parser_build.set_defaults(command = build)
-
-    # chain build
-    parser_chainbuild = subparsers.add_parser('chain-build',
-                help = 'Build current package in order with other packages',
-                parents = [parser_build_common],
-                formatter_class=argparse.RawDescriptionHelpFormatter,
-                description = """
-Build current package in order with other packages.
-
-example: fedpkg chain-build libwidget libgizmo
-
-The current package is added to the end of the CHAIN list.
-Colons (:) can be used in the CHAIN parameter to define groups of
-packages.  Packages in any single group will be built in parallel
-and all packages in a group must build successfully and populate
-the repository before the next group will begin building.
-
-For example:
-
-fedpkg chain-build libwidget libaselib : libgizmo :
-
-will cause libwidget and libaselib to be built in parallel, followed
-by libgizmo and then the currect directory package. If no groups are
-defined, packages will be built sequentially.""")
-    parser_chainbuild.add_argument('package', nargs = '+',
-                                   help = 'List the packages and order you '
-                                   'want to build in')
-    parser_chainbuild.set_defaults(command = chainbuild)
 
     # check preps; not planned
     #parser_check = subparsers.add_parser('check',
@@ -1179,20 +638,6 @@ defined, packages will be built sequentially.""")
                               help = 'Use md5 checksums (for older rpm hosts)')
     parser_local.set_defaults(command = local)
 
-    # Build in mock
-    parser_mockbuild = subparsers.add_parser('mockbuild',
-                                             help = 'Local test build using '
-                                             'mock',
-                                             description = 'This will use \
-                                             the mock utility to build the \
-                                             package for the distribution \
-                                             detected from branch \
-                                             information.  This can be \
-                                             overridden using the global \
-                                             --dist option.  Your user must \
-                                             be in the local "mock" group.')
-    parser_mockbuild.set_defaults(command = mockbuild)
-
     # See what's different
     parser_new = subparsers.add_parser('new',
                                        help = 'Diff against last tag',
@@ -1276,24 +721,6 @@ defined, packages will be built sequentially.""")
                                help = 'Message for retiring the package')
     parser_retire.set_defaults(command = retire)
 
-    # scratch build
-    parser_scratchbuild = subparsers.add_parser('scratch-build',
-                                                help = 'Request scratch build',
-                                                parents = [parser_build_common],
-                                                description = 'This command \
-                                                will request a scratch build \
-                                                of the package.  Without \
-                                                providing an srpm, it will \
-                                                attempt to build the latest \
-                                                commit, which must have been \
-                                                pushed.  By default all \
-                                                approprate arches will be \
-                                                built.')
-    parser_scratchbuild.add_argument('--arches', nargs = '*',
-                                     help = 'Build for specific arches')
-    parser_scratchbuild.add_argument('--srpm', help='Build from srpm')
-    parser_scratchbuild.set_defaults(command = scratchbuild)
-
     # sources downloads all the source files, into an optional output dir
     parser_sources = subparsers.add_parser('sources',
                                            help = 'Download source files')
@@ -1359,21 +786,6 @@ defined, packages will be built sequentially.""")
                             help = 'Name of the tag')
     parser_tag.set_defaults(command = tag)
 
-    # Create a releng tag request
-    parser_tagrequest = subparsers.add_parser('tag-request',
-                                              help = 'Submit current build nvr '
-                                              'as a releng tag request',
-                                              description = 'This command \
-                                              files a ticket with release \
-                                              engineering, usually for a \
-                                              buildroot override.  It will \
-                                              discover the build n-v-r \
-                                              automatically but can be \
-                                              overridden.')
-    parser_tagrequest.add_argument('--desc', help="Description of tag request")
-    parser_tagrequest.add_argument('--build', help="Override the build n-v-r")
-    parser_tagrequest.set_defaults(command = tagrequest)
-
     # Show unused Fedora patches; not planned
     #parser_unusedfedpatches = subparsers.add_parser('unused-fedora-patches',
     #        help = 'Print Fedora patches not used by Patch and/or ApplyPatch'
@@ -1386,15 +798,6 @@ defined, packages will be built sequentially.""")
                                                  'not referenced by name in '
                                                  'the specfile')
     parser_unusedpatches.set_defaults(command = unusedpatches)
-
-    # Submit to bodhi for update
-    parser_update = subparsers.add_parser('update',
-                                          help = 'Submit last build as an '
-                                          'update',
-                                          description = 'This will create a \
-                                          bodhi update request for the \
-                                          current package n-v-r.')
-    parser_update.set_defaults(command = update)
 
     # upload target takes one or more files as input
     parser_upload = subparsers.add_parser('upload',
@@ -1448,8 +851,6 @@ if __name__ == '__main__':
             sys.exit(1)
 
     # Import non-standard python stuff here
-    import fedora_cert
-    import koji
     import pyfedpkg
 
     # setup the logger -- This logger will take things of INFO or DEBUG and

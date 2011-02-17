@@ -16,7 +16,6 @@ import re
 import pycurl
 import subprocess
 import hashlib
-import koji
 import rpm
 import logging
 import git
@@ -1074,41 +1073,6 @@ class PackageModule:
             raise FedpkgError('Unable to find remote branch.  Use --dist')
         return(merge.split('/')[2])
 
-    def _findmasterbranch(self):
-        """Find the right "fedora" for master"""
-
-        # Create a list of "fedoras"
-        fedoras = []
-
-        # Create a regex to find f## branches.  Works until Fedora 100
-        branchre = re.compile('f\d\d')
-
-        # Find the repo refs
-        for ref in self.repo.refs:
-            # Only find the remote refs
-            if type(ref) == git.refs.RemoteReference:
-                # grab the top level name
-                branch = ref.name.split('/')[1]
-                if branchre.match(branch):
-                    # Add it to the fedoras
-                    fedoras.append(branch)
-        if fedoras:
-            # Sort the list
-            fedoras.sort()
-            # Start with the last item, strip the f, add 1, return it.
-            return(int(fedoras[-1].strip('f')) + 1)
-        else:
-            if not self.anonkojisession:
-                self.init_koji()
-            # We may not have Fedoras.  Find out what rawhide target does.
-            try:
-                rawhidetarget = self.kojisession.getBuildTarget('dist-rawhide')
-            except:
-                # We couldn't hit koji, bail.
-                raise FedpkgError('Unable to query koji to find rawhide target')
-            desttag = rawhidetarget['dest_tag_name']
-            return desttag.strip('dist-f')
-
     def _getlocalarch(self):
         """Get the local arch as defined by rpm"""
         
@@ -1127,60 +1091,18 @@ class PackageModule:
         self.spec = self.gimmespec()
         self.module = _name_from_spec(os.path.join(self.path, self.spec))
         self.localarch = self._getlocalarch()
-        # Set the default mock config to None, not all branches have a config
-        self.mockconfig = None
-        # Set a place holder for kojisession
-        self.kojisession = None
-        self.anonkojisession = None
         # Setup the repo
         try:
             self.repo = git.Repo(path)
         except git.errors.InvalidGitRepositoryError:
             raise FedpkgError('%s is not a valid repo (no git checkout)' % path)
-        # Find the branch and set things based from that
-        # Still requires a 'branch' file in each branch
-        if dist:
-            self.branch = dist
-        else:
-            self.branch = self._findbranch()
-        if self.branch.startswith('f'):
-            self.distval = self.branch.split('f')[1]
-            self.distvar = 'fedora'
-            self.dist = 'fc%s' % self.distval
-            self.target = 'dist-f%s-updates-candidate' % self.distval
-            self.mockconfig = 'fedora-%s-%s' % (self.distval, self.localarch)
-            self.override = 'dist-f%s-override' % self.distval
-        elif self.branch.startswith('el'):
-            self.distval = self.branch.split('el')[1]
-            self.distvar = 'rhel'
-            self.dist = 'el%s' % self.distval
-            self.target = 'dist-%sE-epel-testing-candidate' % self.distval
-            self.mockconfig = 'epel-%s-%s' % (self.distval, self.localarch)
-            self.override = 'dist-%sE-epel-override' % self.distval
-        elif self.branch.startswith('olpc'):
-            self.distval = self.branch.split('olpc')[1]
-            self.distvar = 'olpc'
-            self.dist = 'olpc%s' % self.distval
-            self.target = 'dist-olpc%s' % self.distval
-            self.override = 'dist-olpc%s-override' % self.distval
-        # If we don't match one of the above, assume master or a branch of
-        # master
-        else:
-            self.distval = self._findmasterbranch()
-            self.distvar = 'fedora'
-            self.distshort = 'fc%s' % self.distval
-            self.dist = 'fc%s' % self.distval
-            self.target = 'dist-rawhide'
-            self.mockconfig = 'fedora-devel-%s' % self.localarch
-            self.override = None
+
         self.rpmdefines = ["--define '_sourcedir %s'" % path,
                            "--define '_specdir %s'" % path,
                            "--define '_builddir %s'" % path,
                            "--define '_srcrpmdir %s'" % path,
                            "--define '_rpmdir %s'" % path,
-                           "--define 'dist .%s'" % self.dist,
-                           "--define '%s %s'" % (self.distvar, self.distval),
-                           "--define '%s 1'" % self.dist]
+                           ]
         try:
             self.ver = self.getver()
             self.rel = self.getrel()
@@ -1190,134 +1112,6 @@ class PackageModule:
         # Define the hashtype to use for srpms
         # Default to md5 hash type
         self.hashtype = 'md5'
- 
-    def build(self, skip_tag=False, scratch=False, background=False,
-              url=None, chain=None, arches=None):
-        """Initiate a build of the module.  Available options are:
-
-        skip_tag: Skip the tag action after the build
-
-        scratch: Perform a scratch build
-
-        background: Perform the build with a low priority
-
-        url: A url to an uploaded srpm to build from
-
-        chain: A chain build set
-
-        This function submits the task to koji and returns the taskID
-
-        It is up to the client to wait or watch the task.
-
-        """
-
-        # build up the command that a user would issue
-        cmd = ['koji']
-        # Make sure we have a valid session.
-        if not self.kojisession:
-            raise FedpkgError('No koji session found.')
-        # construct the url
-        if not url:
-            # We don't have a url, so build from the latest commit
-            # Check to see if the tree is dirty
-            if self.repo.is_dirty():
-                raise FedpkgError('There are uncommitted changes in your repo')
-            # Need to check here to see if the local commit you want to build is
-            # pushed or not
-            branch = self.repo.active_branch
-            try:
-                remote = self.repo.git.config('--get',
-                    'branch.%s.remote' % branch)
-
-                merge = self.repo.git.config('--get',
-                    'branch.%s.merge' % branch).replace('refs/heads', remote)
-                if self.repo.git.rev_list('%s...%s' % (branch, merge)):
-                    raise FedpkgError('There are unpushed changes in your repo')
-            except git.errors.GitCommandError:
-                raise FedpkgError('You must provide a srpm or push your changes to origin.')
-            # Get the commit hash to build
-            commit = self.repo.iter_commits().next().sha
-            url = ANONGITURL % {'module': self.module} + '?#%s' % commit
-        # Check to see if the target is valid
-        build_target = self.kojisession.getBuildTarget(self.target)
-        if not build_target:
-            raise FedpkgError('Unknown build target: %s' % self.target)
-        # see if the dest tag is locked
-        dest_tag = self.kojisession.getTag(build_target['dest_tag_name'])
-        if not dest_tag:
-            raise FedpkgError('Unknown destination tag %s' %
-                              build_target['dest_tag_name'])
-        if dest_tag['locked'] and not scratch:
-            raise FedpkgError('Destination tag %s is locked' % dest_tag['name'])
-        # If we're chain building, make sure inheritance works
-        if chain:
-            cmd.append('chain-build')
-            ancestors = self.kojisession.getFullInheritance(build_target['build_tag'])
-            if dest_tag['id'] not in [build_target['build_tag']] + [ancestor['parent_id'] for ancestor in ancestors]:
-                raise FedpkgError('Packages in destination tag ' \
-                                  '%(dest_tag_name)s are not inherited by' \
-                                  'build tag %(build_tag_name)s' %
-                                  build_target)
-        else:
-            cmd.append('build')
-        # define our dictionary for options
-        opts = {}
-        # Set a placeholder for the build priority
-        priority = None
-        if skip_tag:
-            opts['skip_tag'] = True
-            cmd.append('--skip-tag')
-        if scratch:
-            opts['scratch'] = True
-            cmd.append('--scratch')
-        if background:
-            cmd.append('--background')
-            priority = 5 # magic koji number :/
-        if arches:
-            if not scratch:
-                raise FedpkgError('Cannot override arches for non-scratch builds')
-            cmd.append('--arch-override=%s' % ','.join(arches))
-            opts['arch_override'] = ' '.join(arches)
-
-        cmd.append(self.target)
-        # see if this build has been done.  Does not check builds within
-        # a chain
-        if not scratch:
-            build = self.kojisession.getBuild(self.nvr)
-            if build:
-                if build['state'] == 1:
-                    raise FedpkgError('%s has already been built' %
-                                      self.nvr)
-        # Now submit the task and get the task_id to return
-        # Handle the chain build version
-        if chain:
-            log.debug('Adding %s to the chain' % url)
-            chain.append([url])
-            # This next list comp is ugly, but it's how we properly get a :
-            # put in between each build set
-            cmd.extend(' : '.join([' '.join(sets) for sets in chain]).split())
-            log.info('Chain building %s + %s for %s' % (self.nvr,
-                                                        chain[:-1],
-                                                        self.target))
-            log.debug('Building chain %s for %s with options %s and a ' \
-                      'priority of %s' %
-                      (chain, self.target, opts, priority))
-            log.debug(' '.join(cmd))
-            task_id = self.kojisession.chainBuild(chain, self.target, opts,
-                                                  priority=priority)
-        # Now handle the normal build
-        else:
-            cmd.append(url)
-            log.info('Building %s for %s' % (self.nvr, self.target))
-            log.debug('Building %s for %s with options %s and a priority of %s' %
-                      (url, self.target, opts, priority))
-            log.debug(' '.join(cmd))
-            task_id = self.kojisession.build(url, self.target, opts,
-                                             priority=priority)
-        log.info('Created task: %s' % task_id)
-        log.info('Task info: %s/taskinfo?taskID=%s' % (self.kojiweburl,
-                                                       task_id))
-        return task_id
 
     def clog(self):
         """Write the latest spec changelog entry to a clog file"""
@@ -1433,93 +1227,6 @@ class PackageModule:
         url = ANONGITURL % {'module': self.module} + '?#%s' % commit
         return url
 
-    def koji_upload(self, file, path, callback=None):
-        """Upload a file to koji
-
-        file is the file you wish to upload
-
-        path is the relative path on the server to upload to
-
-        callback is the progress callback to use, if any
-
-        Returns nothing or raises
-
-        """
-
-        # See if we actually have a file
-        if not os.path.exists(file):
-            raise FedpkgError('No such file: %s' % file)
-        if not self.kojisession:
-            raise FedpkgError('No active koji session.')
-        # This should have a try and catch koji errors
-        self.kojisession.uploadWrapper(file, path, callback = callback)
-        return
-
-    def init_koji(self, user=None, kojiconfig=None, url=None):
-        """Initiate a koji session.  Available options are:
-
-        user: User to log into koji as (if no user, no login)
-
-        kojiconfig: Use an alternate koji config file
-
-        This function attempts to log in and returns nothing or raises.
-
-        """
-
-        # Stealing a bunch of code from /usr/bin/koji here, too bad it isn't
-        # in a more usable library form
-        defaults = {
-                    'server' : 'http://localhost/kojihub',
-                    'weburl' : 'http://localhost/koji',
-                    'pkgurl' : 'http://localhost/packages',
-                    'topdir' : '/mnt/koji',
-                    'cert': '~/.koji/client.crt',
-                    'ca': '~/.koji/clientca.crt',
-                    'serverca': '~/.koji/serverca.crt',
-                    'authtype': None
-                    }
-        # Process the configs in order, global, user, then any option passed
-        configs = ['/etc/koji.conf', os.path.expanduser('~/.koji/config')]
-        if kojiconfig:
-            configs.append(os.path.join(kojiconfig))
-        for configFile in configs:
-            if os.access(configFile, os.F_OK):
-                f = open(configFile)
-                config = ConfigParser.ConfigParser()
-                config.readfp(f)
-                f.close()
-                if config.has_section('koji'):
-                    for name, value in config.items('koji'):
-                        if defaults.has_key(name):
-                            defaults[name] = value
-        # Expand out the directory options
-        for name in ('topdir', 'cert', 'ca', 'serverca'):
-            defaults[name] = os.path.expanduser(defaults[name])
-        session_opts = {'user': user}
-        # We assign the kojisession to our self as it can be used later to
-        # watch the tasks.
-        log.debug('Initiating a koji session to %s' % defaults['server'])
-        try:
-            if user:
-                self.kojisession = koji.ClientSession(defaults['server'],
-                                                      session_opts)
-            else:
-                self.kojisession = koji.ClientSession(defaults['server'])
-        except:
-            raise FedpkgError('Could not initiate koji session')
-        # save the weburl for later use too
-        self.kojiweburl = defaults['weburl']
-        # log in using ssl
-        if user:
-            try:
-                self.kojisession.ssl_login(defaults['cert'], defaults['ca'],
-                                           defaults['serverca'])
-            except:
-                raise FedpkgError('Opening a SSL connection failed')
-            if not self.kojisession.logged_in:
-                raise FedpkgError('Could not auth with koji as %s' % user)
-        return
-
     def install(self, arch=None, short=False):
         """Run rpm -bi on a module
 
@@ -1600,82 +1307,6 @@ class PackageModule:
         # Run the command
         _run_command(cmd, shell=True, pipe=['tee', logfile])
         return
-
-    def mockbuild(self, mockargs=[]):
-        """Build the package in mock, using mockargs
-
-        Log the output and returns nothing
-
-        """
-
-        # Make sure we have an srpm to run on
-        self.srpm()
-
-        # setup the command
-        cmd = ['mock']
-        cmd.extend(mockargs)
-        cmd.extend(['-r', self.mockconfig, '--resultdir',
-                    os.path.join(self.path, self.module, self.ver, self.rel),
-                    '--rebuild', self.srpmname])
-        # Run the command
-        _run_command(cmd)
-        return
-
-    def new_ticket(self, username, passwd, desc, build=None):
-        """Open a new ticket on Rel-Eng trac instance.
-
-        Get ticket component and assignee from current branch
-
-        Create a new task ticket using username/password/desc
-
-        Discover build nvr from module or optional build argument
-
-        Return ticket number on success
-
-        """
-
-        override = self.override
-        if not override:
-            raise FedpkgError('Override tag is not required for %s' %
-                              self.branch)
-
-        uri = TRACBASEURL % {'user': username, 'password': passwd}
-        self.trac = offtrac.TracServer(uri)
-
-        # Set trac's component and assignee from related distvar
-        if self.distvar == 'fedora':
-            component = 'koji'
-            #owner = 'rel-eng@lists.fedoraproject.org'
-        elif self.distvar == 'rhel':
-            component = 'epel'
-            #owner = 'releng-epel@lists.fedoraproject.org'
-
-        # Raise if people request a tag against something that self updates
-        self.init_koji(username)
-        build_target = self.kojisession.getBuildTarget(self.target)
-        if not build_target:
-            raise FedpkgError('Unknown build target: %s' % self.target)
-        dest_tag = self.kojisession.getTag(build_target['dest_tag_name'])
-        ancestors = self.kojisession.getFullInheritance(build_target['build_tag'])
-        if dest_tag['id'] in [build_target['build_tag']] + \
-                                  [ancestor['parent_id'] for
-                                   ancestor in ancestors]:
-            raise FedpkgError('Override tag is not required for %s' %
-                              self.branch)
-
-        if not build:
-            build = self.nvr
-
-        summary = 'Tag request %s for %s' % (build, override)
-        type = 'task'
-        try:
-            ticket = self.trac.create_ticket(summary, desc, component=component,
-                                             notify=True)
-        except subprocess.CalledProcessError, e:
-            raise FedpkgError('Could not request tag %s: %s' % (build, e))
-
-        log.debug('Task %s created' % ticket)
-        return ticket
 
     def upload(self, files, replace=False, user=None, passwd=None):
         """Upload source file(s) in the lookaside cache

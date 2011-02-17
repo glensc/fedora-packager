@@ -35,9 +35,9 @@ _fedpkg()
 
     local options="--help -v -q"
     local options_value="--dist --user --path"
-    local commands="build chain-build ci clean clog clone co commit compile diff gimmespec giturl help \
-    import install lint local mockbuild new new-sources patch prep pull push retire scratch-build sources \
-    srpm switch-branch tag tag-request unused-patches update upload verify-files verrel"
+    local commands="ci clean clog clone co commit compile diff gimmespec giturl help \
+    import install lint local new new-sources patch prep pull push retire sources \
+    srpm switch-branch tag unused-patches upload verify-files verrel"
 
     # parse main options and get command
 
@@ -93,18 +93,7 @@ _fedpkg()
     local after= after_more=
 
     case $command in
-        help|clog|gimmespec|giturl|lint|mockbuild|new|push|unused-patches|update|verrel)
-            ;;
-        build)
-            options="--nowait --background --skip-tag --scratch"
-            options_srpm="--srpm"
-            options_target="--target"
-            ;;
-        chain-build)
-            options="--nowait --background"
-            options_target="--target"
-            after="package"
-            after_more=true
+        help|clog|gimmespec|giturl|lint|new|push|unused-patches|verrel)
             ;;
         clean)
             options="--dry-run -x"
@@ -156,12 +145,6 @@ _fedpkg()
             options="--push"
             after_more=true
             ;;
-        scratch-build)
-            options="--nowait --background"
-            options_target="--target"
-            options_arches="--arches"
-            options_srpm="--srpm"
-            ;;
         sources)
             options_dir="--outdir"
             ;;
@@ -177,9 +160,6 @@ _fedpkg()
             options_string="--message"
             options_file="--file"
             after_more=true
-            ;;
-        tag-request)
-            options_string="--desc --build"
             ;;
         upload|new-sources)
             after="file"

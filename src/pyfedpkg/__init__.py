@@ -1558,10 +1558,9 @@ class PackageModule:
         arches = _get_build_arches_from_srpm(os.path.join(self.path, srpm),
                                              [self.localarch])
         rpms = []
-        for arch in arches:
-            rpms.extend([os.path.join(self.path, arch, file) for file in
-                         os.listdir(os.path.join(self.path, arch))
-                         if file.endswith('.rpm')])
+        rpms.extend([os.path.join(self.path, file) for file in
+                     os.listdir(self.path)
+                     if file.endswith('.rpm')])
         cmd = ['rpmlint']
         if info:
             cmd.extend(['-i'])

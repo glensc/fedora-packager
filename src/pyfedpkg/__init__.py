@@ -783,7 +783,6 @@ def _spec_archives(path, spec):
     for (no, sum) in spec.sourcemd5.items():
         (path, file) = os.path.split(spec.sourceurl[no])
         a.append('%s  %s' % (sum, file))
-    print a
     return a
 
 def sources(path, outdir=None):
@@ -1068,6 +1067,7 @@ class SpecModule:
         self.nosource = {}
 
         self.patchurl = {}
+
         self._rpm_dump()
         self._find_md5()
 
@@ -1124,7 +1124,7 @@ class SpecModule:
         """ find md5 checksum from spec file"""
         # ~/rpm/packages/builder src_md5()
         spec = open(self.spec, 'r').read().split('\n')
-        reg = re.compile('# Source(?P<no>\d+)-md5:\s*(?P<sum>[0-9a-f]{32})')
+        reg = re.compile('^# Source(?P<no>\d+)-md5:\s*(?P<sum>[0-9a-f]{32})')
         for l in spec:
             m = re.match(reg, l)
             if not m:

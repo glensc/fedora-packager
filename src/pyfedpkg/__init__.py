@@ -24,8 +24,6 @@ import stat
 import StringIO
 import OpenSSL
 import fnmatch
-import offtrac
-
 
 # Define some global variables, put them here to make it easy to change
 LOOKASIDE = 'http://distfiles.pld-linux.org'

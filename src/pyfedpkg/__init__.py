@@ -774,17 +774,16 @@ def retire(path, message=None):
 
     return
 
-def _spec_archives(package):
+
+def _spec_archives(path, spec):
     """parse sources from .spec"""
-    # currently uses builder and adopts output for fedpkg format
-#     $ builder --source-distfiles-paths eventum
-#     by-md5/7/e/7eb5055260fcf096bc48b0e6c4758e3b/eventum-2.3.1.tar.gz
-#     by-md5/d/e/deb6eeb2552ba757d3a949ed10c4107d/updown2.gif
-    proc = subprocess.Popen(['builder -sdp %s' % package], shell=True, stdout=subprocess.PIPE)
+
+    spec = SpecModule(path, spec)
     a = []
-    for l in proc.stdout.readlines():
-        (md5, file) = l.rstrip().split('/')[-2:]
-        a.append('%s  %s' % (md5, file))
+    for (no, sum) in spec.sourcemd5.items():
+        (path, file) = os.path.split(spec.sourceurl[no])
+        a.append('%s  %s' % (sum, file))
+    print a
     return a
 
 def sources(path, outdir=None):
@@ -803,7 +802,7 @@ def sources(path, outdir=None):
         raise FedpkgError('%s is not a valid repo (no .spec found)' % path)
     module = _name_from_spec(os.path.join(path, spec))
     try:
-        archives = _spec_archives(spec)
+        archives = _spec_archives(path, spec)
     except IOError, e:
         raise FedpkgError('%s is not a valid repo: %s' % (path, e))
     # Default to putting the files where the module is
@@ -1055,6 +1054,82 @@ class GitIgnore(object):
                 gitignore_file.write(line)
             gitignore_file.close()
 
+# Create a class for spec
+class SpecModule:
+    def __init__(self, path=None, spec=None):
+        self.path = path
+        self.spec = spec
+        self.name = None
+        self.version = None
+        self.release = None
+
+        self.sourceurl = {}
+        self.sourcemd5 = {}
+        self.nosource = {}
+
+        self.patchurl = {}
+        self._rpm_dump()
+        self._find_md5()
+
+    def _rpm_dump(self):
+        """parse spec contents"""
+        # ~/rpm/packages/builder cache_rpm_dump()
+
+        spec = os.path.join(self.path, self.spec)
+        cmd = ['rpmbuild', '--nodigest', '--nosignature', '--nobuild', '--nodeps',
+            '-D', 'prep %{echo:dummy: PACKAGE_NAME %{name} }%dump',
+            spec
+        ]
+        # Run the command
+        log.debug('Running: %s' % ' '.join(cmd))
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            output, error = proc.communicate()
+        except OSError, e:
+            raise FedpkgError(e)
+
+        # the dump does not exit with respectable error code, it outputs data to
+        # stderr so only way to figure there was error, is to parse stderr for
+        # "error:"
+        for l in error.split('\n'):
+            if l[:6] == 'error:':
+                raise FedpkgError(l)
+
+            l = l.split(': ', 1)
+            if len(l) < 2:
+                continue
+
+            m = re.split('\s+', l[1], 2)
+            if len(m) < 2:
+                continue
+
+            (k, v) = m[:2]
+            if k == 'nosource':
+                self.nosource[k] = v
+            elif k == 'PACKAGE_NAME':
+                self.name = v
+            elif k == 'PACKAGE_VERSION':
+                self.version = v
+            elif k == 'PACKAGE_RELEASE':
+                self.release = v
+            elif k[:9] == 'SOURCEURL':
+                no = k[9:]
+                self.sourceurl[no] = v
+            elif k[:8] == 'PATCHURL':
+                no = k[8:]
+                self.patchurl[no] = v
+
+    def _find_md5(self):
+        """ find md5 checksum from spec file"""
+        # ~/rpm/packages/builder src_md5()
+        spec = open(self.spec, 'r').read().split('\n')
+        reg = re.compile('# Source(?P<no>\d+)-md5:\s*(?P<sum>[0-9a-f]{32})')
+        for l in spec:
+            m = re.match(reg, l)
+            if not m:
+                continue
+            self.sourcemd5[m.group('no')] = m.group('sum')
 
 # Create a class for package module
 class PackageModule:

@@ -67,6 +67,9 @@ def clean(args):
     if args.x:
         useignore = False
     try:
+        # create PackageModule object, for safety, not to run git clean if
+        # outside package dir
+        mymodule = pyfedpkg.PackageModule(args.path, args.dist)
         return pyfedpkg.clean(dry, useignore)
     except pyfedpkg.FedpkgError, e:
         log.error('Could not clean: %s' % e)
